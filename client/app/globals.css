@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #ffffff;
+  --color-foreground: #171717;
+  --color-primary: #0a0a0a;
+  --color-background-light: #ffffff;
+  --color-text-primary: #0a0a0a;
+  --color-text-secondary: #5f5f5f;
+  --color-text-tertiary: #8e8e8e;
+  --color-border-light: #e5e5e5;
+  --color-surface: #f7f7f7;
+  --color-accent: #3e63dd;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme inline {
+    --color-background: #0a0a0a;
+    --color-foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Material Symbols Outlined icon font styling */
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 24;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom utility classes for the RideShare color palette */
+.bg-primary {
+  background-color: #0a0a0a;
+}
+.bg-background-light {
+  background-color: #ffffff;
+}
+.text-background-light {
+  color: #ffffff;
+}
+.text-text-primary {
+  color: #0a0a0a;
+}
+.text-text-secondary {
+  color: #5f5f5f;
+}
+.text-text-tertiary {
+  color: #8e8e8e;
+}
+.border-border-light {
+  border-color: #e5e5e5;
+}
+.bg-surface {
+  background-color: #f7f7f7;
+}
+.text-accent {
+  color: #3e63dd;
+}
+.hover\:text-accent:hover {
+  color: #3e63dd;
+}
+.hover\:bg-text-secondary:hover {
+  background-color: #5f5f5f;
+}
+.hover\:bg-border-light:hover {
+  background-color: #e5e5e5;
+}
+.focus\:ring-accent:focus {
+  --tw-ring-color: #3e63dd;
+}
+.focus\:border-accent:focus {
+  border-color: #3e63dd;
+}
+
+/* Gradient utilities for background */
+.from-background-light\/0 {
+  --tw-gradient-from: rgba(255, 255, 255, 0) var(--tw-gradient-from-position);
+  --tw-gradient-to: rgba(255, 255, 255, 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.to-background-light {
+  --tw-gradient-to: rgb(255, 255, 255) var(--tw-gradient-to-position);
+}
+
+/* Hover states for text colors */
+.hover\:text-text-primary:hover {
+  color: #0a0a0a;
+}
