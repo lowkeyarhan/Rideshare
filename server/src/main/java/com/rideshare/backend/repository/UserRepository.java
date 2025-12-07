@@ -33,13 +33,6 @@ public class UserRepository {
         return mongoTemplate.findById(id, User.class);
     }
 
-    // find user by email
-    public User findUserByEmail(String email) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("email").is(email));
-        return mongoTemplate.findOne(query, User.class);
-    }
-
     // register/add/update a user
     public User registerUser(User user) {
         return mongoTemplate.save(user);
