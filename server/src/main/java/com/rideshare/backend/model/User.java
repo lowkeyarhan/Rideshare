@@ -1,7 +1,6 @@
 package com.rideshare.backend.model;
 
-import javax.management.relation.Role;
-
+import com.rideshare.backend.model.enums.Role;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 

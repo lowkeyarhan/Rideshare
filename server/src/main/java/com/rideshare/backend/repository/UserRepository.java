@@ -39,7 +39,14 @@ public class UserRepository {
 
     }
 
-    // check if username already exists in the db (for login)
+    // find user by username
+    public User findByUsername(String username) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("username").is(username));
+        return mongoTemplate.findOne(query, User.class);
+    }
+
+    // check if username already exists in the db (for registration validation)
     public boolean usernameExists(String username) {
         Query query = new Query();
         query.addCriteria(Criteria.where("username").is(username));

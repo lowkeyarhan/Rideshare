@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: rideshare-backend
+  
+  mongodb:
+    uri: mongodb+srv://lowkeyarhan:terimaakichut80kiraftaarse@ridesharecluster0.tpeov9w.mongodb.net/rideshare?retryWrites=true&w=majority&appName=RideshareCluster0

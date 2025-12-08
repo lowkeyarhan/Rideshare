@@ -1,20 +1,24 @@
-package com.rideshare.backend.model;
+package com.rideshare.backend.dto;
 
 import com.rideshare.backend.model.enums.Status;
-import java.time.LocalDateTime;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
-@Document(collection = "rides")
-public class Ride {
+public class RideRequest {
 
-    public String getId() {
-        return id;
-    }
+    @NotBlank(message = "User id is mandatory")
+    private String userId;
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    private String driverId;
+
+    @NotBlank(message = "Pickup location is mandatory")
+    private String pickupLocation;
+
+    @NotBlank(message = "Drop location is mandatory")
+    private String dropLocation;
+
+    @NotNull(message = "Status is mandatory")
+    private Status status;
 
     public String getUserId() {
         return userId;
@@ -55,21 +59,4 @@ public class Ride {
     public void setStatus(Status status) {
         this.status = status;
     }
-
-    public LocalDateTime getRideTime() {
-        return rideTime;
-    }
-
-    public void setRideTime(LocalDateTime rideTime) {
-        this.rideTime = rideTime;
-    }
-
-    @Id
-    private String id;
-    private String userId;
-    private String driverId;
-    private String pickupLocation;
-    private String dropLocation;
-    private Status status;
-    private LocalDateTime rideTime;
 }

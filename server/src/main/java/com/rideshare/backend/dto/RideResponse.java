@@ -1,12 +1,17 @@
-package com.rideshare.backend.model;
+package com.rideshare.backend.dto;
 
 import com.rideshare.backend.model.enums.Status;
 import java.time.LocalDateTime;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "rides")
-public class Ride {
+public class RideResponse {
+
+    private String id;
+    private String userId;
+    private String driverId;
+    private String pickupLocation;
+    private String dropLocation;
+    private Status status;
+    private LocalDateTime rideTime;
 
     public String getId() {
         return id;
@@ -63,13 +68,4 @@ public class Ride {
     public void setRideTime(LocalDateTime rideTime) {
         this.rideTime = rideTime;
     }
-
-    @Id
-    private String id;
-    private String userId;
-    private String driverId;
-    private String pickupLocation;
-    private String dropLocation;
-    private Status status;
-    private LocalDateTime rideTime;
 }
