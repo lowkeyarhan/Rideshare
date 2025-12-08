@@ -78,8 +78,21 @@ function Dashboard() {
     return new Date(createdAt).toLocaleString();
   };
 
+  const requestedCount = rides.filter(
+    (ride) => ride.status === "REQUESTED"
+  ).length;
+  const completedCount = rides.filter(
+    (ride) => ride.status === "COMPLETED"
+  ).length;
+
+  const getStatusBadgeClasses = (status: Ride["status"]) => {
+    if (status === "REQUESTED") return "bg-yellow-100 text-[#AA6C00]";
+    if (status === "COMPLETED") return "bg-green-100 text-[#0F8A3C]";
+    return "bg-blue-100 text-[#1D4ED8]";
+  };
+
   return (
-    <div className="bg-background text-primary font-display">
+    <div className="bg-[#FFFFFF] text-[#141414] font-display">
       <div className="flex min-h-screen w-full">
         <SidebarP
           name={user?.name}
@@ -90,75 +103,75 @@ function Dashboard() {
         <main className="flex-1 overflow-y-auto bg-[#F7F7F7] p-8">
           <div className="mx-auto max-w-7xl">
             <header className="mb-8">
-              <div className="mb-6 flex flex-col gap-2">
-                <h1 className="text-4xl font-black leading-tight tracking-[-0.033em] text-[#141414]">
-                  {user ? `Hello, ${user.name}!` : "Loading..."}
+              <div className="mb-6 flex flex-col gap-1">
+                <h1 className="text-3xl font-bold leading-tight tracking-tight">
+                  {user ? `Hello, ${user.name}!` : "Hello, Alex!"}
                 </h1>
-                <p className="text-base leading-normal text-[#707070]">
-                  {loading
-                    ? "Checking your recent rides"
-                    : `You have ${rides.length} ride${
-                        rides.length === 1 ? "" : "s"
-                      } in your history.`}
+                <p className="text-base text-[#707070]">
+                  Ready to go somewhere?
                 </p>
               </div>
-
-              <div className="rounded-xl bg-white p-6 shadow-sm">
+              <div className="rounded-xl bg-[#FFFFFF] p-6 shadow-sm">
                 <form
-                  className="flex flex-col gap-4 md:flex-row md:items-end"
+                  className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
                   onSubmit={handleRequestRide}
                 >
-                  <div className="flex flex-1 flex-col gap-4">
-                    <label className="flex flex-col gap-2">
-                      <span className="text-sm font-medium text-[#141414]">
-                        Pickup location
-                      </span>
-                      <div className="relative">
-                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#707070]">
-                          my_location
-                        </span>
-                        <input
-                          className="w-full rounded-lg bg-[#F7F7F7] px-10 py-3 text-[#141414] placeholder-[#707070] focus:outline-none focus:ring-2 focus:ring-[#141414]"
-                          placeholder="Enter pickup location"
-                          type="text"
-                          value={pickupLocation}
-                          onChange={(event) =>
-                            setPickupLocation(event.target.value)
-                          }
-                        />
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="flex flex-col items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-[#141414]" />
+                      <span className="w-px h-10 bg-[#E5E5E5]" />
+                      <span className="w-3 h-3 bg-[#141414]" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex flex-col gap-4">
+                        <div>
+                          <label className="text-xs font-medium text-[#707070]">
+                            Pickup location
+                          </label>
+                          <div className="mt-1.5 flex items-center gap-3">
+                            <span className="material-symbols-outlined text-neutral-default text-xl">
+                              my_location
+                            </span>
+                            <input
+                              className="w-full rounded-md border border-transparent bg-[#F7F7F7] px-3 py-2 text-base font-medium text-[#141414] focus:border-[#141414] focus:outline-none"
+                              type="text"
+                              value={pickupLocation}
+                              onChange={(event) =>
+                                setPickupLocation(event.target.value)
+                              }
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-[#707070]">
+                            Destination
+                          </label>
+                          <div className="mt-1.5 flex items-center gap-3">
+                            <span className="material-symbols-outlined text-neutral-default text-xl">
+                              location_on
+                            </span>
+                            <input
+                              className="w-full rounded-md border border-transparent bg-[#F7F7F7] px-3 py-2 text-base font-medium text-[#141414] focus:border-[#141414] focus:outline-none"
+                              type="text"
+                              placeholder="Where to?"
+                              value={dropLocation}
+                              onChange={(event) =>
+                                setDropLocation(event.target.value)
+                              }
+                            />
+                          </div>
+                        </div>
                       </div>
-                    </label>
-
-                    <label className="flex flex-col gap-2">
-                      <span className="text-sm font-medium text-[#141414]">
-                        Destination
-                      </span>
-                      <div className="relative">
-                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#707070]">
-                          location_on
-                        </span>
-                        <input
-                          className="w-full rounded-lg bg-[#F7F7F7] px-10 py-3 text-[#141414] placeholder-[#707070] focus:outline-none focus:ring-2 focus:ring-[#141414]"
-                          placeholder="Where to?"
-                          type="text"
-                          value={dropLocation}
-                          onChange={(event) =>
-                            setDropLocation(event.target.value)
-                          }
-                        />
-                      </div>
-                    </label>
+                    </div>
                   </div>
-
                   <button
-                    className="flex h-[92px] min-w-[140px] cursor-pointer items-center justify-center rounded-lg bg-[#141414] px-6 text-base font-medium text-white transition-colors hover:bg-opacity-90 disabled:opacity-50"
+                    className="flex h-14 min-w-[140px] items-center justify-center rounded-lg bg-[#141414] px-6 text-base font-semibold text-white transition-colors hover:bg-opacity-90 disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
                     type="submit"
                     disabled={requestLoading}
                   >
                     {requestLoading ? "Requesting..." : "Find Ride"}
                   </button>
                 </form>
-
                 {(error || success) && (
                   <p
                     className={`mt-4 text-sm ${
@@ -173,10 +186,15 @@ function Dashboard() {
 
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
               <div className="flex flex-col gap-8 lg:col-span-2">
-                <div className="rounded-xl bg-white p-6">
-                  <p className="mb-4 text-lg font-bold leading-tight tracking-[-0.015em] text-[#141414]">
-                    Your Rides
-                  </p>
+                <div className="rounded-xl bg-[#FFFFFF] p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-bold leading-tight">
+                      Your Rides
+                    </h2>
+                    <button className="text-sm font-semibold text-[#141414] hover:underline">
+                      View All
+                    </button>
+                  </div>
                   {loading ? (
                     <p className="text-sm text-[#707070]">
                       Loading ride data...
@@ -190,24 +208,30 @@ function Dashboard() {
                       {rides.map((ride) => (
                         <div
                           key={ride.id}
-                          className="rounded-lg border border-[#E5E5E5] p-4"
+                          className="flex items-center justify-between gap-4 border-b border-[#E5E5E5] pb-4 last:border-b-0 last:pb-0"
                         >
-                          <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#F7F7F7]">
+                              <span className="material-symbols-outlined text-2xl text-[#141414]">
+                                directions_car
+                              </span>
+                            </div>
                             <div>
-                              <p className="text-sm font-medium text-[#141414]">
-                                {ride.pickupLocation}
+                              <p className="text-base font-semibold text-[#141414]">
+                                {ride.pickupLocation} → {ride.dropLocation}
                               </p>
-                              <p className="text-sm font-medium text-[#141414]">
-                                → {ride.dropLocation}
-                              </p>
-                              <p className="text-xs text-[#707070]">
+                              <p className="text-sm text-[#707070]">
                                 {formatTime(ride.createdAt)}
                               </p>
                             </div>
-                            <span className="rounded-full bg-[#F7F7F7] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#141414]">
-                              {ride.status}
-                            </span>
                           </div>
+                          <span
+                            className={`text-sm font-semibold px-3 py-1 rounded-full ${getStatusBadgeClasses(
+                              ride.status
+                            )}`}
+                          >
+                            {ride.status}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -216,66 +240,50 @@ function Dashboard() {
               </div>
 
               <div className="flex flex-col gap-8">
-                <div className="rounded-xl bg-white p-6">
-                  <div className="mb-4 flex items-center justify-between">
-                    <p className="text-lg font-bold leading-tight tracking-[-0.015em] text-[#141414]">
+                <div className="rounded-xl bg-[#FFFFFF] p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-bold leading-tight">
                       Ride History
-                    </p>
+                    </h2>
                     <span className="text-sm text-[#707070]">
                       {rides.length} total
                     </span>
                   </div>
-                  {rides.length === 0 ? (
-                    <p className="text-sm text-[#707070]">
-                      Nothing to show yet.
-                    </p>
-                  ) : (
-                    <div className="flex flex-col gap-3">
-                      {rides.slice(0, 4).map((ride) => (
-                        <div
-                          key={ride.id}
-                          className="flex items-center gap-4 rounded-lg bg-[#F7F7F7] p-3"
-                        >
-                          <div className="flex size-10 items-center justify-center rounded-lg bg-white">
-                            <span className="material-symbols-outlined text-[#141414]">
-                              directions_car
-                            </span>
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-[#141414]">
-                              {ride.pickupLocation} → {ride.dropLocation}
-                            </p>
-                            <p className="text-xs text-[#707070]">
-                              {formatTime(ride.createdAt)}
-                            </p>
-                          </div>
-                          <span className="text-xs font-semibold text-[#141414]">
-                            {ride.status}
-                          </span>
-                        </div>
-                      ))}
+                  <div className="flex flex-col gap-5">
+                    <div className="flex items-center justify-between">
+                      <p className="text-base text-[#707070]">
+                        Completed Rides
+                      </p>
+                      <p className="text-base font-bold text-[#141414]">
+                        {completedCount}
+                      </p>
                     </div>
-                  )}
+                    <div className="flex items-center justify-between">
+                      <p className="text-base text-[#707070]">
+                        Requested Rides
+                      </p>
+                      <p className="text-base font-bold text-[#141414]">
+                        {requestedCount}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-
-                <div className="rounded-xl bg-white p-6">
-                  <div className="mb-4 flex items-center justify-between">
-                    <p className="text-lg font-bold leading-tight tracking-[-0.015em] text-[#141414]">
-                      Account
-                    </p>
-                    <span className="text-xs uppercase tracking-wide text-[#707070]">
-                      {user?.role ?? "ROLE_USER"}
+                <div className="rounded-xl bg-[#FFFFFF] p-6 shadow-sm">
+                  <div className="flex items-start justify-between mb-4">
+                    <h2 className="text-xl font-bold leading-tight">Account</h2>
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-[#E5E5E5] text-[#707070]">
+                      PASSENGER
                     </span>
                   </div>
-                  <div className="space-y-3 text-sm text-[#141414]">
-                    <div className="flex justify-between">
-                      <span>User name</span>
+                  <div className="flex flex-col gap-4 text-sm text-[#141414]">
+                    <div className="flex items-center justify-between">
+                      <span>User Name</span>
                       <span className="font-semibold">{user?.username}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex items-center justify-between">
                       <span>Account ID</span>
-                      <span className="font-semibold wrap-break-word">
-                        {user?.id}
+                      <span className="font-semibold">
+                        {user?.id?.slice(0, 4)}...{user?.id?.slice(-4)}
                       </span>
                     </div>
                   </div>
