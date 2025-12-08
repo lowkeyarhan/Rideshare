@@ -1,20 +1,14 @@
 import apiClient from "./apiClient";
-import { Ride, Status } from "./types";
+import { Ride } from "./types";
 
-export const fetchDriverRides = async (driverId: string) => {
-  const { data } = await apiClient.get<Ride[]>(`/api/rides/driver/${driverId}`);
-  return data;
-};
+export const fetchDriverRides = () =>
+  apiClient.get<Ride[]>("/api/v1/driver/rides").then(({ data }) => data);
 
-export const fetchAvailableRides = async () => {
-  const { data } = await apiClient.get<Ride[]>("/api/rides/available");
-  return data;
-};
+export const fetchAvailableRides = () =>
+  apiClient.get<Ride[]>("/api/v1/driver/rides/requests").then(({ data }) => data);
 
-export const acceptRide = async (rideId: string, driverId: string) => {
-  const { data } = await apiClient.put<Ride>(`/api/rides/${rideId}`, {
-    driverId,
-    status: "ACCEPTED" as const,
-  });
-  return data;
-};
+export const acceptRide = (rideId: string) =>
+  apiClient.post<Ride>(`/api/v1/driver/rides/${rideId}/accept`).then(({ data }) => data);
+
+export const completeRide = (rideId: string) =>
+  apiClient.post<Ride>(`/api/v1/rides/${rideId}/complete`).then(({ data }) => data);

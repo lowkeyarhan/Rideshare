@@ -1,22 +1,29 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { isAuthenticated, getStoredUser } from "@/src/libs/auth";
 
 export default function Home() {
   const router = useRouter();
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
+    if (hasRedirected.current) {
+      return;
+    }
+
     if (isAuthenticated()) {
+      hasRedirected.current = true;
       const user = getStoredUser();
-      if (user?.role === "DRIVER") {
-        router.push("/dashboard/driver");
+      if (user?.role === "ROLE_DRIVER") {
+        router.replace("/dashboard/driver");
       } else {
-        router.push("/dashboard/passenger");
+        router.replace("/dashboard/passenger");
       }
     }
   }, [router]);
+
   return (
     <div className="bg-background font-display text-primary">
       <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
@@ -76,7 +83,12 @@ export default function Home() {
                     </a>
                   </div>
                   <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#f3f4f6] text-[#111827] text-sm font-bold leading-normal tracking-[0.015em] hover:bg-[#e5e7eb] transition-colors">
-                    <span className="truncate">Sign Up</span>
+                    <span
+                      className="truncate"
+                      onClick={() => router.push("/auth")}
+                    >
+                      Sign Up
+                    </span>
                   </button>
                 </div>
               </header>
@@ -213,7 +225,7 @@ export default function Home() {
                           pin_drop
                         </span>
                       </div>
-                      <div className="w-1 bg-[#6b7280] h-full grow"></div>
+                      <div className="w-[2px] bg-[#6b7280] h-full grow"></div>
                     </div>
                     <div className="flex flex-1 flex-col pb-10 pt-3">
                       <p className="text-[#111827] text-lg font-bold leading-normal">
@@ -224,13 +236,13 @@ export default function Home() {
                       </p>
                     </div>
                     <div className="flex flex-col items-center gap-2">
-                      <div className="w-1 bg-[#6b7280] h-full grow"></div>
+                      <div className="w-[2px] bg-[#6b7280] h-full grow"></div>
                       <div className="text-[#111827] p-2 bg-[#f3f4f6] rounded-full border border-[#e5e7eb]">
                         <span className="material-symbols-outlined">
                           directions_car
                         </span>
                       </div>
-                      <div className="w-1 bg-[#6b7280] h-full grow"></div>
+                      <div className="w-[2px] bg-[#6b7280] h-full grow"></div>
                     </div>
                     <div className="flex flex-1 flex-col pb-10">
                       <p className="text-[#111827] text-lg font-bold leading-normal">
@@ -241,7 +253,7 @@ export default function Home() {
                       </p>
                     </div>
                     <div className="flex flex-col items-center gap-2 pb-3">
-                      <div className="w-1 bg-[#6b7280] h-full grow"></div>
+                      <div className="w-[2px] bg-[#6b7280] h-full grow"></div>
                       <div className="text-[#111827] p-2 bg-[#f3f4f6] rounded-full border border-[#e5e7eb]">
                         <span className="material-symbols-outlined">trip</span>
                       </div>

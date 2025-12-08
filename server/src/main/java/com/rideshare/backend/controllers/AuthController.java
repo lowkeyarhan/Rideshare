@@ -1,10 +1,11 @@
 package com.rideshare.backend.controllers;
 
-import com.rideshare.backend.config.JwtUtil;
 import com.rideshare.backend.dto.UserLoginRequest;
 import com.rideshare.backend.dto.UserRegisterRequest;
 import com.rideshare.backend.model.User;
 import com.rideshare.backend.service.UserService;
+import com.rideshare.backend.utils.JwtUtil;
+
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,10 +23,13 @@ public class AuthController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    // Register a new user
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody UserRegisterRequest request) {
         User user = userService.register(request);
+        String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
         Map<String, Object> body = new HashMap<>();
+        body.put("token", token);
         body.put("id", user.getId());
         body.put("name", user.getName());
         body.put("username", user.getUsername());
@@ -33,6 +37,7 @@ public class AuthController {
         return ResponseEntity.ok(body);
     }
 
+    // Login user and generate JWT token
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody UserLoginRequest request) {
         User user = userService.validateUserCredentials(request);

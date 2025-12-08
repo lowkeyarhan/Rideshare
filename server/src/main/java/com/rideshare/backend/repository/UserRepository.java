@@ -1,8 +1,5 @@
 package com.rideshare.backend.repository;
 
-import java.util.List;
-
-import com.rideshare.backend.model.enums.Role;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -15,23 +12,6 @@ public class UserRepository {
 
     @Autowired
     private MongoTemplate mongoTemplate;
-
-    // get all users
-    public List<User> getAllUsers() {
-        return mongoTemplate.findAll(User.class);
-    }
-
-    // get users by role
-    public List<User> getUsersByRole(String role) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("role").is(Role.valueOf(role)));
-        return mongoTemplate.find(query, User.class);
-    }
-
-    // find user by id
-    public User findUserById(String id) {
-        return mongoTemplate.findById(id, User.class);
-    }
 
     // register/add/update a user
     public User registerUser(User user) {

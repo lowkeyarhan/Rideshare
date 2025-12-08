@@ -22,39 +22,31 @@ function Dashboard() {
 
   useEffect(() => {
     const currentUser = getStoredUser();
-    if (!currentUser) {
-      return;
-    }
+    if (!currentUser) return;
 
     setUser(currentUser);
-
-    const loadRides = async () => {
-      try {
-        const data = await fetchUserRides(currentUser.id);
+    fetchUserRides()
+      .then((data) => {
+        console.log("Loaded rides:", data);
         setRides(data);
-      } catch (error) {
-        console.error(error);
-        setError("Unable to load your rides right now.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadRides();
+      })
+      .catch((error) => {
+        console.error("Error loading rides:", error);
+        const status = error.response?.status;
+        if (status === 401 || status === 403) {
+          setError("Session expired. Please log in again.");
+        } else {
+          setError("Unable to load your rides right now.");
+        }
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  const logout = () => {
-    clearAuth();
-    router.push("/auth");
-  };
+  const logout = () => (clearAuth(), router.push("/auth"));
 
   const handleRequestRide = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!user) {
-      return;
-    }
-
-    if (!pickupLocation.trim() || !dropLocation.trim()) {
+    if (!user || !pickupLocation.trim() || !dropLocation.trim()) {
       setError("Please fill in both locations.");
       return;
     }
@@ -64,31 +56,26 @@ function Dashboard() {
     setSuccess("");
 
     try {
-      await createRideRequest({
-        userId: user.id,
-        pickupLocation,
-        dropLocation,
-        status: "REQUESTED",
-      });
+      await createRideRequest({ pickupLocation, dropLocation });
       setSuccess("Ride requested successfully!");
       setDropLocation("");
-      const data = await fetchUserRides(user.id);
-      setRides(data);
+      setRides(await fetchUserRides());
     } catch (err) {
-      const fallback =
-        (err as { response?: { data?: string } })?.response?.data ??
-        "Unable to request ride.";
-      setError(typeof fallback === "string" ? fallback : "Please try again.");
+      const errorMsg = (err as { response?: { data?: string } })?.response
+        ?.data;
+      setError(
+        typeof errorMsg === "string" ? errorMsg : "Unable to request ride."
+      );
     } finally {
       setRequestLoading(false);
     }
   };
 
-  const formatTime = (rideTime?: string) => {
-    if (!rideTime) {
-      return "Awaiting driver";
+  const formatTime = (createdAt?: string) => {
+    if (!createdAt) {
+      return "Just now";
     }
-    return new Date(rideTime).toLocaleString();
+    return new Date(createdAt).toLocaleString();
   };
 
   return (
@@ -214,7 +201,7 @@ function Dashboard() {
                                 → {ride.dropLocation}
                               </p>
                               <p className="text-xs text-[#707070]">
-                                {formatTime(ride.rideTime)}
+                                {formatTime(ride.createdAt)}
                               </p>
                             </div>
                             <span className="rounded-full bg-[#F7F7F7] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#141414]">
@@ -259,7 +246,7 @@ function Dashboard() {
                               {ride.pickupLocation} → {ride.dropLocation}
                             </p>
                             <p className="text-xs text-[#707070]">
-                              {formatTime(ride.rideTime)}
+                              {formatTime(ride.createdAt)}
                             </p>
                           </div>
                           <span className="text-xs font-semibold text-[#141414]">
@@ -277,7 +264,7 @@ function Dashboard() {
                       Account
                     </p>
                     <span className="text-xs uppercase tracking-wide text-[#707070]">
-                      {user?.role ?? "RIDER"}
+                      {user?.role ?? "ROLE_USER"}
                     </span>
                   </div>
                   <div className="space-y-3 text-sm text-[#141414]">
@@ -304,7 +291,7 @@ function Dashboard() {
 
 export default function PassengerDashboardWrapper() {
   return (
-    <ProtectedRoute requiredRole="RIDER">
+    <ProtectedRoute requiredRole="ROLE_USER">
       <Dashboard />
     </ProtectedRoute>
   );

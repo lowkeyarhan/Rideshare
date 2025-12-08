@@ -1,7 +1,6 @@
 package com.rideshare.backend.model.enums;
 
 public enum Role {
-    RIDER,
-    DRIVER,
-    ADMIN
+    ROLE_USER,
+    ROLE_DRIVER
 }

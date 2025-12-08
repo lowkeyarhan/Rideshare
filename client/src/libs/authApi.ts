@@ -13,7 +13,7 @@ export type LoginPayload = {
   password: string;
 };
 
-export type LoginResponse = {
+export type AuthResponse = {
   token: string;
   id: string;
   name: string;
@@ -21,15 +21,12 @@ export type LoginResponse = {
   role: Role;
 };
 
-export const registerUser = async (payload: RegisterPayload) => {
-  const { data } = await apiClient.post("/api/auth/register", payload);
-  return data;
-};
+export const registerUser = (payload: RegisterPayload) =>
+  apiClient
+    .post<AuthResponse>("/api/auth/register", payload)
+    .then(({ data }) => data);
 
-export const loginUser = async (payload: LoginPayload) => {
-  const { data } = await apiClient.post<LoginResponse>(
-    "/api/auth/login",
-    payload
-  );
-  return data;
-};
+export const loginUser = (payload: LoginPayload) =>
+  apiClient
+    .post<AuthResponse>("/api/auth/login", payload)
+    .then(({ data }) => data);

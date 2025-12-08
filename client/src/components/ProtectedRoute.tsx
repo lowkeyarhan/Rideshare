@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { isAuthenticated, hasRole } from "@/src/libs/auth";
+import { getStoredToken, getStoredUser } from "@/src/libs/auth";
 import type { Role } from "@/src/libs/types";
 
 type ProtectedRouteProps = {
@@ -15,23 +15,29 @@ export default function ProtectedRoute({
   requiredRole,
 }: ProtectedRouteProps) {
   const router = useRouter();
+  const [isAllowed, setIsAllowed] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push("/auth");
+    const token = getStoredToken();
+    if (!token) {
+      router.replace("/auth");
       return;
     }
 
-    if (requiredRole && !hasRole(requiredRole)) {
-      router.push("/auth");
+    const user = getStoredUser();
+    if (requiredRole && user?.role !== requiredRole) {
+      const fallback =
+        user?.role === "ROLE_DRIVER"
+          ? "/dashboard/driver"
+          : "/dashboard/passenger";
+      router.replace(fallback);
+      return;
     }
+
+    setIsAllowed(true);
   }, [router, requiredRole]);
 
-  if (!isAuthenticated()) {
-    return null;
-  }
-
-  if (requiredRole && !hasRole(requiredRole)) {
+  if (!isAllowed) {
     return null;
   }
 

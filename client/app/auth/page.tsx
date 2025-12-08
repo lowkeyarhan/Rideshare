@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { FormEvent } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { loginUser, registerUser } from "@/src/libs/authApi";
-import { fetchUserProfile } from "@/src/libs/profileApi";
 import { isAuthenticated, getStoredUser } from "@/src/libs/auth";
 import type { Role } from "@/src/libs/types";
 
@@ -15,23 +14,30 @@ type AuthMode = "signin" | "signup";
 export default function Auth() {
   const router = useRouter();
   const [authMode, setAuthMode] = useState<AuthMode>("signin");
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
+    if (hasRedirected.current) {
+      return;
+    }
+
     if (isAuthenticated()) {
+      hasRedirected.current = true;
       const user = getStoredUser();
-      if (user?.role === "DRIVER") {
-        router.push("/dashboard/driver");
+      if (user?.role === "ROLE_DRIVER") {
+        router.replace("/dashboard/driver");
       } else {
-        router.push("/dashboard/passenger");
+        router.replace("/dashboard/passenger");
       }
     }
   }, [router]);
+
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     name: "",
     username: "",
     password: "",
-    role: "RIDER" as Role,
+    role: "ROLE_USER" as Role,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -44,10 +50,25 @@ export default function Auth() {
     setLoading(true);
     try {
       if (authMode === "signup") {
-        await registerUser(form);
-        setMessage("Account created. Sign in to continue.");
-        setAuthMode("signin");
-        setForm((prev) => ({ ...prev, password: "" }));
+        const registerData = await registerUser(form);
+
+        // Auto-login after registration
+        localStorage.setItem("rideshareToken", registerData.token);
+        localStorage.setItem(
+          "rideshareUser",
+          JSON.stringify({
+            id: registerData.id,
+            name: registerData.name,
+            username: registerData.username,
+            role: registerData.role,
+          })
+        );
+
+        if (registerData.role === "ROLE_DRIVER") {
+          router.push("/dashboard/driver");
+        } else {
+          router.push("/dashboard/passenger");
+        }
         return;
       }
 
@@ -67,18 +88,31 @@ export default function Auth() {
         })
       );
 
-      if (loginData.role === "DRIVER") {
+      if (loginData.role === "ROLE_DRIVER") {
         router.push("/dashboard/driver");
       } else {
         router.push("/dashboard/passenger");
       }
     } catch (err: unknown) {
-      const fallback =
-        (err as { response?: { data?: string } })?.response?.data ??
-        "Something went wrong. Please try again.";
-      setError(
-        typeof fallback === "string" ? fallback : "Unable to process request."
-      );
+      console.error("Auth error:", err);
+      const axiosError = err as { response?: { data?: any; status?: number } };
+      let errorMessage = "Something went wrong. Please try again.";
+
+      if (axiosError.response) {
+        if (typeof axiosError.response.data === "string") {
+          errorMessage = axiosError.response.data;
+        } else if (axiosError.response.data?.message) {
+          errorMessage = axiosError.response.data.message;
+        } else if (axiosError.response.status === 401) {
+          errorMessage = "Invalid username or password";
+        } else if (axiosError.response.status === 400) {
+          errorMessage = "Please check your input and try again";
+        }
+      } else if ((err as Error).message) {
+        errorMessage = `Network error: ${(err as Error).message}`;
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -233,8 +267,8 @@ export default function Auth() {
                     }
                     className="h-14 w-full rounded-lg border border-[#E5E5E5] bg-[#F6F6F6] px-4 text-base text-[#1A1A1A] focus:border-[#000000] focus:outline-none focus:ring-2 focus:ring-[#000000]/20"
                   >
-                    <option value="RIDER">Book rides</option>
-                    <option value="DRIVER">Drive passengers</option>
+                    <option value="ROLE_USER">Book rides</option>
+                    <option value="ROLE_DRIVER">Drive passengers</option>
                   </select>
                 </div>
               )}

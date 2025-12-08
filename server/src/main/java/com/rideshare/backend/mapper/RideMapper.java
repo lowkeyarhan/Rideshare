@@ -3,25 +3,21 @@ package com.rideshare.backend.mapper;
 import com.rideshare.backend.dto.RideRequest;
 import com.rideshare.backend.dto.RideResponse;
 import com.rideshare.backend.model.Ride;
-import java.time.LocalDateTime;
 
 public class RideMapper {
 
     private RideMapper() {
     }
 
+    // client to server
     public static Ride toEntity(RideRequest request) {
         Ride ride = new Ride();
-        ride.setUserId(request.getUserId());
-        ride.setDriverId(request.getDriverId());
         ride.setPickupLocation(request.getPickupLocation());
         ride.setDropLocation(request.getDropLocation());
-        ride.setStatus(request.getStatus());
-        ride.setRideTime(LocalDateTime.now());
-        ride.setFare(request.getFare());
         return ride;
     }
 
+    // server to client
     public static RideResponse toResponse(Ride ride) {
         RideResponse response = new RideResponse();
         response.setId(ride.getId());
@@ -30,8 +26,7 @@ public class RideMapper {
         response.setPickupLocation(ride.getPickupLocation());
         response.setDropLocation(ride.getDropLocation());
         response.setStatus(ride.getStatus());
-        response.setRideTime(ride.getRideTime());
-        response.setFare(ride.getFare());
+        response.setCreatedAt(ride.getCreatedAt());
         return response;
     }
 }

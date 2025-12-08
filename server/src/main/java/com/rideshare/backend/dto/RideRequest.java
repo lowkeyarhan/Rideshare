@@ -1,40 +1,14 @@
 package com.rideshare.backend.dto;
 
-import com.rideshare.backend.model.enums.Status;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 public class RideRequest {
 
-    @NotBlank(message = "User id is mandatory")
-    private String userId;
-
-    private String driverId;
-
-    @NotBlank(message = "Pickup location is mandatory")
+    @NotBlank(message = "Pickup location is required")
     private String pickupLocation;
 
-    @NotBlank(message = "Drop location is mandatory")
+    @NotBlank(message = "Drop location is required")
     private String dropLocation;
-
-    @NotNull(message = "Status is mandatory")
-    private Status status;
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-
-    public String getDriverId() {
-        return driverId;
-    }
-
-    public void setDriverId(String driverId) {
-        this.driverId = driverId;
-    }
 
     public String getPickupLocation() {
         return pickupLocation;
@@ -51,22 +25,4 @@ public class RideRequest {
     public void setDropLocation(String dropLocation) {
         this.dropLocation = dropLocation;
     }
-
-    public Status getStatus() {
-        return status;
-    }
-
-    public void setStatus(Status status) {
-        this.status = status;
-    }
-
-    public Double getFare() {
-        return fare;
-    }
-
-    public void setFare(Double fare) {
-        this.fare = fare;
-    }
-
-    private Double fare;
 }

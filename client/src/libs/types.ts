@@ -1,4 +1,4 @@
-export type Role = "RIDER" | "DRIVER" | "ADMIN";
+export type Role = "ROLE_USER" | "ROLE_DRIVER";
 export type Status = "REQUESTED" | "COMPLETED" | "ACCEPTED";
 
 export type User = {
@@ -15,6 +15,5 @@ export type Ride = {
   pickupLocation: string;
   dropLocation: string;
   status: Status;
-  rideTime?: string;
-  fare?: number;
+  createdAt?: string;
 };

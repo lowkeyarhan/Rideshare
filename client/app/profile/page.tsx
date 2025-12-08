@@ -15,31 +15,18 @@ function ProfilePage() {
 
   useEffect(() => {
     const currentUser = getStoredUser();
-    if (!currentUser) {
-      return;
-    }
+    if (!currentUser) return;
 
-    const loadProfile = async () => {
-      try {
-        const profile = await fetchUserProfile(currentUser.username);
-        setUser(profile);
-        localStorage.setItem("rideshareUser", JSON.stringify(profile));
-      } catch (error) {
-        console.error(error);
+    fetchUserProfile()
+      .then((profile) => setUser(profile || currentUser))
+      .catch(() => {
         setError("Unable to load your profile at the moment.");
         setUser(currentUser);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadProfile();
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  const logout = () => {
-    clearAuth();
-    router.push("/auth");
-  };
+  const logout = () => (clearAuth(), router.push("/auth"));
 
   return (
     <div className="bg-[#FFFFFF] font-['Plus_Jakarta_Sans','Noto_Sans',sans-serif] text-[#1A1A1A]">

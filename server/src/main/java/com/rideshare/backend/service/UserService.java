@@ -5,7 +5,6 @@ import com.rideshare.backend.dto.UserRegisterRequest;
 import com.rideshare.backend.mapper.UserMapper;
 import com.rideshare.backend.model.User;
 import com.rideshare.backend.repository.UserRepository;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -42,33 +41,8 @@ public class UserService {
         return user;
     }
 
-    // Get all users
-    public List<User> getAllUsers() {
-        return userRepository.getAllUsers();
-    }
-
-    // Get users by role (e.g., "RIDER", "DRIVER", "ADMIN")
-    public List<User> getUsersByRole(String role) {
-        return userRepository.getUsersByRole(role);
-    }
-
-    // Find user by ID
-    public User findUserById(String id) {
-        return userRepository.findUserById(id);
-    }
-
-    // Find user by username
+    // Find user by username (used internally by RideService)
     public User findByUsername(String username) {
         return userRepository.findByUsername(username);
-    }
-
-    // Check if username already exists
-    public boolean usernameExists(String username) {
-        return userRepository.usernameExists(username);
-    }
-
-    // Update/save user
-    public User saveUser(User user) {
-        return userRepository.registerUser(user);
     }
 }

@@ -56,20 +56,12 @@ public class Ride {
         this.status = status;
     }
 
-    public LocalDateTime getRideTime() {
-        return rideTime;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setRideTime(LocalDateTime rideTime) {
-        this.rideTime = rideTime;
-    }
-
-    public Double getFare() {
-        return fare;
-    }
-
-    public void setFare(Double fare) {
-        this.fare = fare;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     @Id
@@ -79,6 +71,5 @@ public class Ride {
     private String pickupLocation;
     private String dropLocation;
     private Status status;
-    private LocalDateTime rideTime;
-    private Double fare;
+    private LocalDateTime createdAt;
 }
