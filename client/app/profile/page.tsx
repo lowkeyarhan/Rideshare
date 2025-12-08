@@ -1,11 +1,50 @@
-import React from "react";
+"use client";
 
-export default function ProfilePage() {
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import ProtectedRoute from "@/src/components/ProtectedRoute";
+import { fetchUserProfile } from "@/src/libs/profileApi";
+import { getStoredUser, clearAuth } from "@/src/libs/auth";
+import type { User } from "@/src/libs/types";
+
+function ProfilePage() {
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const currentUser = getStoredUser();
+    if (!currentUser) {
+      return;
+    }
+
+    const loadProfile = async () => {
+      try {
+        const profile = await fetchUserProfile(currentUser.username);
+        setUser(profile);
+        localStorage.setItem("rideshareUser", JSON.stringify(profile));
+      } catch (error) {
+        console.error(error);
+        setError("Unable to load your profile at the moment.");
+        setUser(currentUser);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
+  const logout = () => {
+    clearAuth();
+    router.push("/auth");
+  };
+
   return (
-    <div className="bg-[#FFFFFF] font-['Plus_Jakarta_Sans',_'Noto_Sans',_sans-serif] text-[#1A1A1A]">
-      <div className="relative flex h-auto min-h-screen w-full flex-col">
-        {/* Header */}
-        <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-[#E8E8E8] px-6 md:px-10 py-3 bg-[#FFFFFF] sticky top-0 z-10">
+    <div className="bg-[#FFFFFF] font-['Plus_Jakarta_Sans','Noto_Sans',sans-serif] text-[#1A1A1A]">
+      <div className="relative flex min-h-screen w-full flex-col">
+        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-[#E8E8E8] bg-white px-6 py-3 md:px-10">
           <div className="flex items-center gap-4 text-[#1A1A1A]">
             <div className="size-6">
               <svg
@@ -32,39 +71,16 @@ export default function ProfilePage() {
               RideShare
             </h2>
           </div>
-          <div className="flex flex-1 justify-end gap-8 items-center">
-            <div className="hidden md:flex items-center gap-9">
-              <a
-                className="text-sm font-medium leading-normal text-[#6B6B6B] hover:text-[#1A1A1A] transition-colors"
-                href="#"
-              >
-                Rides
-              </a>
-              <a
-                className="text-sm font-medium leading-normal text-[#6B6B6B] hover:text-[#1A1A1A] transition-colors"
-                href="#"
-              >
-                Drive
-              </a>
-              <a
-                className="text-sm font-medium leading-normal text-[#6B6B6B] hover:text-[#1A1A1A] transition-colors"
-                href="#"
-              >
-                Business
-              </a>
-              <a
-                className="text-sm font-medium leading-normal text-[#6B6B6B] hover:text-[#1A1A1A] transition-colors"
-                href="#"
-              >
-                Safety
-              </a>
-            </div>
-            <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-[#F6F6F6] text-[#1A1A1A] text-sm font-medium leading-normal hover:bg-[#E8E8E8] transition-colors">
-              <span className="truncate">Log Out</span>
+          <div className="flex items-center gap-4">
+            <button
+              className="rounded-full bg-[#F6F6F6] px-4 py-2 text-sm font-medium text-[#1A1A1A] hover:bg-[#E8E8E8]"
+              onClick={logout}
+              type="button"
+            >
+              Log Out
             </button>
             <div
-              className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
-              data-alt="User profile picture"
+              className="size-10 rounded-full bg-cover bg-center"
               style={{
                 backgroundImage:
                   'url("https://lh3.googleusercontent.com/aida-public/AB6AXuAQwKOVs7rtaUmKj2JjYjngaXeyV75b58q9fN1qqp8HQ72thqk6OZCi6AC9PDOXjGGT_swoNXU-UNVMUgNh81GdSlOFdhr9E7mHmxpHfpWHybWcU9ngmMDbJRhu7it68Wh8JWd7OI5CHwN3xOaa74UvkqVb_ewm_IdJ4xKHLA7XGOVPz5QsnEhSR0DEqax0wYSpY-Wh7uyXRL4IurQcyhyRLIkH5raD4WKVsj4KRTiVzpmZz84xEwd7NA8Z-ap5untzrGQWTeSUTGI")',
@@ -73,235 +89,92 @@ export default function ProfilePage() {
           </div>
         </header>
 
-        <div className="flex flex-1">
-          {/* Sidebar */}
-          <aside className="w-64 flex-shrink-0 p-6 border-r border-[#E8E8E8] hidden md:block bg-[#FFFFFF]">
-            <nav className="flex h-full flex-col justify-between">
-              <div className="flex flex-col gap-2">
-                <a
-                  className="flex items-center gap-4 px-4 py-2.5 rounded-full bg-[#F6F6F6]"
-                  href="#"
-                >
-                  <span className="material-symbols-outlined text-[#1A1A1A] text-2xl">
-                    person
-                  </span>
-                  <p className="text-[#1A1A1A] text-sm font-medium leading-normal">
-                    My Profile
-                  </p>
-                </a>
-                <a
-                  className="flex items-center gap-4 px-4 py-2.5 rounded-full hover:bg-[#F6F6F6] cursor-pointer transition-colors"
-                  href="#"
-                >
-                  <span className="material-symbols-outlined text-[#6B6B6B] text-2xl">
-                    payment
-                  </span>
-                  <p className="text-[#6B6B6B] text-sm font-medium leading-normal">
-                    Payment
-                  </p>
-                </a>
-                <a
-                  className="flex items-center gap-4 px-4 py-2.5 rounded-full hover:bg-[#F6F6F6] cursor-pointer transition-colors"
-                  href="#"
-                >
-                  <span className="material-symbols-outlined text-[#6B6B6B] text-2xl">
-                    privacy_tip
-                  </span>
-                  <p className="text-[#6B6B6B] text-sm font-medium leading-normal">
-                    Privacy
-                  </p>
-                </a>
+        <main className="flex-1 bg-[#F6F6F6] p-6 md:p-10">
+          <div className="mx-auto flex max-w-4xl flex-col gap-8">
+            {error && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                {error}
               </div>
-              <div className="flex flex-col gap-2">
-                <a
-                  className="flex items-center gap-4 px-4 py-2.5 rounded-full hover:bg-[#F6F6F6] cursor-pointer transition-colors"
-                  href="#"
-                >
-                  <span className="material-symbols-outlined text-[#6B6B6B] text-2xl">
-                    help_center
-                  </span>
-                  <p className="text-[#6B6B6B] text-sm font-medium leading-normal">
-                    Help Center
-                  </p>
-                </a>
-                <a
-                  className="flex items-center gap-4 px-4 py-2.5 rounded-full hover:bg-[#F6F6F6] cursor-pointer transition-colors"
-                  href="#"
-                >
-                  <span className="material-symbols-outlined text-[#6B6B6B] text-2xl">
-                    logout
-                  </span>
-                  <p className="text-[#6B6B6B] text-sm font-medium leading-normal">
-                    Log Out
-                  </p>
-                </a>
-              </div>
-            </nav>
-          </aside>
+            )}
 
-          {/* Main Content */}
-          <main className="flex-1 p-6 md:p-10 bg-[#F6F6F6]">
-            <div className="max-w-4xl mx-auto space-y-10">
-              <div className="flex p-4 @container">
-                <div className="flex w-full flex-col gap-4 @[520px]:flex-row @[520px]:justify-between @[520px]:items-center">
-                  <div className="flex gap-4 items-center">
-                    <div className="relative">
-                      <div
-                        className="bg-center bg-no-repeat aspect-square bg-cover rounded-full min-h-24 w-24 md:min-h-32 md:w-32"
-                        data-alt="User profile picture"
-                        style={{
-                          backgroundImage:
-                            'url("https://lh3.googleusercontent.com/aida-public/AB6AXuANGANMp_PI5ynTVwglueFezg7YjVX81ybKHowumDHMb5zzTmH4JiARnvsWa5-DxvxCXQcYT6ClYmvLoMsgPg6P9TzmHfbFGLkLt4adRbgcqlvLFIvc4lHaaNjUJLILDrBjwURrlpw2BRy_FHJEiQJ5BVhf6rhhqKm-6bbQKyrIdcYlbJ-l8ZU6R4N-srx0QPVE_BJI827juYD9mQpvL6oeVZ0KhOK87anEmwNkUNa3RRnNurlrHqlQptHOvgBq9Km4Np80uxufYgg")',
-                        }}
-                      ></div>
-                      <button className="absolute bottom-1 right-1 bg-[#1A1A1A] text-white rounded-full p-2 hover:bg-opacity-80 transition-colors">
-                        <span className="material-symbols-outlined text-base">
-                          edit
-                        </span>
-                      </button>
-                    </div>
-                    <div className="flex flex-col justify-center gap-1">
-                      <p className="text-[#1A1A1A] text-2xl font-bold leading-tight tracking-[-0.015em]">
-                        Alex Johnson
-                      </p>
-                      <p className="text-[#6B6B6B] text-base font-normal leading-normal">
-                        Member since Jan 2023
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E8E8E8] px-2 py-1 text-xs font-medium text-[#6B6B6B]">
-                          <span className="material-symbols-outlined text-sm">
-                            directions_car
-                          </span>
-                          Driver
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E8E8E8] px-2 py-1 text-xs font-medium text-[#6B6B6B]">
-                          <span className="material-symbols-outlined text-sm">
-                            person
-                          </span>
-                          Passenger
-                        </span>
-                      </div>
-                    </div>
+            <section className="rounded-xl bg-white p-6 shadow-sm">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-center gap-4">
+                  <div
+                    className="size-20 rounded-full bg-cover bg-center"
+                    style={{
+                      backgroundImage:
+                        'url("https://lh3.googleusercontent.com/aida-public/AB6AXuANGANMp_PI5ynTVwglueFezg7YjVX81ybKHowumDHMb5zzTmH4JiARnvsWa5-DxvxCXQcYT6ClYmvLoMsgPg6P9TzmHfbFGLkLt4adRbgcqlvLFIvc4lHaaNjUJLILDrBjwURrlpw2BRy_FHJEiQJ5BVhf6rhhqKm-6bbQKyrIdcYlbJ-l8ZU6R4N-srx0QPVE_BJI827juYD9mQpvL6oeVZ0KhOK87anEmwNkUNa3RRnNurlrHqlQptHOvgBq9Km4Np80uxufYgg")',
+                    }}
+                  ></div>
+                  <div>
+                    <p className="text-2xl font-bold text-[#1A1A1A]">
+                      {loading ? "Loading profile..." : user?.name}
+                    </p>
+                    <p className="text-sm text-[#6B6B6B]">
+                      Role: {user?.role ?? "--"}
+                    </p>
                   </div>
                 </div>
               </div>
+            </section>
 
-              <section id="personal-info">
-                <h2 className="text-[#1A1A1A] text-xl font-bold leading-tight tracking-[-0.015em] px-4 pb-4">
-                  Personal Information
-                </h2>
-                <div className="bg-[#FFFFFF] rounded-xl">
-                  <div className="p-6 space-y-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-[#6B6B6B] text-sm">Full Name</p>
-                        <p className="text-[#1A1A1A] text-base font-medium">
-                          Alex Johnson
-                        </p>
-                      </div>
-                      <button className="text-sm font-medium text-[#1A1A1A] hover:underline cursor-pointer">
-                        Edit
-                      </button>
-                    </div>
-                    <hr className="border-[#E8E8E8]" />
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-[#6B6B6B] text-sm">Email Address</p>
-                        <p className="text-[#1A1A1A] text-base font-medium">
-                          alex.j@example.com
-                        </p>
-                      </div>
-                      <button className="text-sm font-medium text-[#1A1A1A] hover:underline cursor-pointer">
-                        Edit
-                      </button>
-                    </div>
-                    <hr className="border-[#E8E8E8]" />
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-[#6B6B6B] text-sm">Phone Number</p>
-                        <p className="text-[#1A1A1A] text-base font-medium">
-                          +1 234 567 8900
-                        </p>
-                      </div>
-                      <button className="text-sm font-medium text-[#1A1A1A] hover:underline cursor-pointer">
-                        Edit
-                      </button>
-                    </div>
-                    <hr className="border-[#E8E8E8]" />
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-[#6B6B6B] text-sm">Password</p>
-                        <p className="text-[#1A1A1A] text-base font-medium">
-                          ************
-                        </p>
-                      </div>
-                      <button className="text-sm font-medium text-[#1A1A1A] hover:underline cursor-pointer">
-                        Edit
-                      </button>
-                    </div>
+            <section className="rounded-xl bg-white p-6 shadow-sm">
+              <h3 className="mb-4 text-lg font-semibold text-[#1A1A1A]">
+                Personal Information
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-[#6B6B6B]">Full Name</p>
+                    <p className="text-base font-medium text-[#1A1A1A]">
+                      {user?.name ?? "--"}
+                    </p>
                   </div>
                 </div>
-              </section>
-
-              <section id="payment-methods">
-                <h2 className="text-[#1A1A1A] text-xl font-bold leading-tight tracking-[-0.015em] px-4 pb-4">
-                  Payment Methods
-                </h2>
-                <div className="bg-[#FFFFFF] rounded-xl p-6 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                      <img
-                        alt="Visa card icon"
-                        className="w-10 h-auto"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbXDYPTIE0eNEw3lPh4l_xoR17mp35s36Uw06eQT74qxPAmspPRnsnEFZ-bJtAT1DdJzIFUPSGqV1rxJucHU2j08qsncs8cydtgmc5-uMZGCdCHHKu-PHk1jRo5MXvhpFM3BIb4RraXodiiafgZ8VD98l3h_5bV7HUBPwAlsNnBpCfKE2GPm1Rl1TpsXukQ-gk0rHtgUml_mh8kfvQTFscSapLDK1igxJUoOZHUuU7hBCuxCD1icRdtX8qC8uuUQxFhpD5y0CIS7g"
-                      />
-                      <div>
-                        <p className="font-medium text-[#1A1A1A]">
-                          Visa ending in 1234
-                        </p>
-                        <p className="text-sm text-[#6B6B6B]">Default</p>
-                      </div>
-                    </div>
-                    <button className="text-[#6B6B6B] hover:text-[#1A1A1A] transition-colors cursor-pointer">
-                      <span className="material-symbols-outlined">
-                        more_horiz
-                      </span>
-                    </button>
+                <hr className="border-[#E8E8E8]" />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-[#6B6B6B]">Username</p>
+                    <p className="text-base font-medium text-[#1A1A1A]">
+                      {user?.username ?? "--"}
+                    </p>
                   </div>
-                  <hr className="border-[#E8E8E8]" />
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                      <img
-                        alt="Mastercard icon"
-                        className="w-10 h-auto"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuBufOVGo0WhrKxKpoC1Sqy1vs-Vurmg6nDZyXEGfeEtxrOP-iYbP3_XqcBG_X6ImD5jq3Fyo7fhKQ7_FApxXcqjBVReomN1LBga-uBdnyNPMBLExcvRt3kWcoDm4axiLw0-ZzSBuxYoBijrjG8feXV3N0cNopKnaQXIru9IuGUED4wP3HYUaxvkyi6K7zC0KjGRrtBKSPPhic5g6evjv1yrXVSqTRJlb4LZSXzAYyAaMwjwUZwu3vc2mcJIhK5vDrWocFY2Prc1GtY"
-                      />
-                      <div>
-                        <p className="font-medium text-[#1A1A1A]">
-                          Mastercard ending in 5678
-                        </p>
-                        <p className="text-sm text-[#6B6B6B]">Expires 12/25</p>
-                      </div>
-                    </div>
-                    <button className="text-[#6B6B6B] hover:text-[#1A1A1A] transition-colors cursor-pointer">
-                      <span className="material-symbols-outlined">
-                        more_horiz
-                      </span>
-                    </button>
-                  </div>
-                  <hr className="border-[#E8E8E8]" />
-                  <button className="flex w-full items-center justify-center gap-2 rounded-lg h-12 bg-[#F6F6F6] text-[#1A1A1A] text-sm font-medium hover:bg-[#E8E8E8] transition-colors cursor-pointer">
-                    <span className="material-symbols-outlined text-lg">
-                      add
-                    </span>
-                    <span className="truncate">Add Payment Method</span>
-                  </button>
                 </div>
-              </section>
-            </div>
-          </main>
-        </div>
+                <hr className="border-[#E8E8E8]" />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-[#6B6B6B]">Account ID</p>
+                    <p className="text-base font-medium text-[#1A1A1A] wrap-break-word">
+                      {user?.id ?? "--"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-xl bg-white p-6 shadow-sm">
+              <h3 className="mb-4 text-lg font-semibold text-[#1A1A1A]">
+                Security
+              </h3>
+              <div className="space-y-3 text-sm text-[#6B6B6B]">
+                <p>
+                  Keep your credentials safe. Contact support to update
+                  sensitive information.
+                </p>
+              </div>
+            </section>
+          </div>
+        </main>
       </div>
     </div>
+  );
+}
+
+export default function ProfilePageWrapper() {
+  return (
+    <ProtectedRoute>
+      <ProfilePage />
+    </ProtectedRoute>
   );
 }

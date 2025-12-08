@@ -64,6 +64,14 @@ public class Ride {
         this.rideTime = rideTime;
     }
 
+    public Double getFare() {
+        return fare;
+    }
+
+    public void setFare(Double fare) {
+        this.fare = fare;
+    }
+
     @Id
     private String id;
     private String userId;
@@ -72,4 +80,5 @@ public class Ride {
     private String dropLocation;
     private Status status;
     private LocalDateTime rideTime;
+    private Double fare;
 }

@@ -46,4 +46,17 @@ public class RideRepository {
         query.addCriteria(Criteria.where("driverId").is(driverId));
         return mongoTemplate.find(query, Ride.class);
     }
+
+    // get available rides (REQUESTED status with no driver)
+    public List<Ride> getAvailableRides() {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("status").is(Status.REQUESTED)
+                .and("driverId").exists(false));
+        return mongoTemplate.find(query, Ride.class);
+    }
+
+    // get a single ride by ID
+    public Ride getRideById(String rideId) {
+        return mongoTemplate.findById(rideId, Ride.class);
+    }
 }

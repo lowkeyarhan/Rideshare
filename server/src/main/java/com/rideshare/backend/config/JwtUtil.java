@@ -2,19 +2,28 @@ package com.rideshare.backend.config;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
 
-    private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    private final Key key;
 
-    private final long expirationMs = 1000 * 60 * 60; // 1 hour
+    @Value("${jwt.expiration:3600000}")
+    private long expirationMs;
+
+    public JwtUtil(@Value("${jwt.secret:rideshare-super-secret-key-for-jwt-token-signing-at-least-256-bits}") String secret) {
+        // Ensure the key is at least 256 bits (32 bytes) for HS256
+        String paddedSecret = secret.length() >= 32 ? secret : String.format("%-32s", secret).replace(' ', '0');
+        byte[] keyBytes = paddedSecret.getBytes(StandardCharsets.UTF_8);
+        this.key = Keys.hmacShaKeyFor(keyBytes);
+    }
 
     public String generateToken(String username, String role) {
         Date now = new Date();

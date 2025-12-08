@@ -1,16 +1,92 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import type { FormEvent } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { loginUser, registerUser } from "@/src/libs/authApi";
+import { fetchUserProfile } from "@/src/libs/profileApi";
+import { isAuthenticated, getStoredUser } from "@/src/libs/auth";
+import type { Role } from "@/src/libs/types";
+
+type AuthMode = "signin" | "signup";
 
 export default function Auth() {
-  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const router = useRouter();
+  const [authMode, setAuthMode] = useState<AuthMode>("signin");
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      const user = getStoredUser();
+      if (user?.role === "DRIVER") {
+        router.push("/dashboard/driver");
+      } else {
+        router.push("/dashboard/passenger");
+      }
+    }
+  }, [router]);
   const [showPassword, setShowPassword] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    username: "",
+    password: "",
+    role: "RIDER" as Role,
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+    setLoading(true);
+    try {
+      if (authMode === "signup") {
+        await registerUser(form);
+        setMessage("Account created. Sign in to continue.");
+        setAuthMode("signin");
+        setForm((prev) => ({ ...prev, password: "" }));
+        return;
+      }
+
+      const loginData = await loginUser({
+        username: form.username,
+        password: form.password,
+      });
+
+      localStorage.setItem("rideshareToken", loginData.token);
+      localStorage.setItem(
+        "rideshareUser",
+        JSON.stringify({
+          id: loginData.id,
+          name: loginData.name,
+          username: loginData.username,
+          role: loginData.role,
+        })
+      );
+
+      if (loginData.role === "DRIVER") {
+        router.push("/dashboard/driver");
+      } else {
+        router.push("/dashboard/passenger");
+      }
+    } catch (err: unknown) {
+      const fallback =
+        (err as { response?: { data?: string } })?.response?.data ??
+        "Something went wrong. Please try again.";
+      setError(
+        typeof fallback === "string" ? fallback : "Unable to process request."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="font-display bg-[#FFFFFF] text-[#1A1A1A]">
       <div className="relative flex min-h-screen w-full">
-        {/* Left Column - Form */}
         <div className="flex w-full flex-col items-center justify-center p-4 md:w-1/2 md:p-12 lg:p-16">
           <div className="w-full max-w-sm">
             <h1 className="text-[#1A1A1A] text-4xl font-bold tracking-tighter mb-2">
@@ -20,7 +96,6 @@ export default function Auth() {
               Welcome back. Please enter your details.
             </p>
 
-            {/* Framer Motion Toggle */}
             <div className="mb-8">
               <div className="flex h-12 flex-1 items-center justify-center rounded-lg bg-[#F6F6F6] p-1 relative">
                 {(["signin", "signup"] as const).map((mode) => {
@@ -29,7 +104,7 @@ export default function Auth() {
                     <button
                       key={mode}
                       onClick={() => setAuthMode(mode)}
-                      className={`flex h-full flex-1 cursor-pointer items-center justify-center rounded-[0.375rem] px-2 text-sm font-medium leading-normal transition-colors duration-200 z-10 focus:outline-none ${
+                      className={`flex h-full flex-1 cursor-pointer items-center justify-center rounded-md px-2 text-sm font-medium leading-normal transition-colors duration-200 z-10 focus:outline-none ${
                         isSelected ? "text-[#1A1A1A]" : "text-[#6B6B6B]"
                       }`}
                       type="button"
@@ -38,7 +113,7 @@ export default function Auth() {
                       {isSelected && (
                         <motion.div
                           layoutId="auth-toggle-pill"
-                          className="absolute inset-1 w-[calc(50%-4px)] bg-[#FFFFFF] rounded-[0.375rem] shadow-sm -z-10"
+                          className="absolute inset-1 w-[calc(50%-4px)] bg-[#FFFFFF] rounded-md shadow-sm -z-10"
                           style={{
                             left: mode === "signin" ? "4px" : "50%",
                           }}
@@ -55,19 +130,50 @@ export default function Auth() {
               </div>
             </div>
 
-            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              {authMode === "signup" && (
+                <div className="flex flex-col">
+                  <label
+                    className="text-sm font-medium text-[#1A1A1A] mb-2"
+                    htmlFor="name"
+                  >
+                    Full Name
+                  </label>
+                  <input
+                    id="name"
+                    name="name"
+                    value={form.name}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        name: event.target.value,
+                      }))
+                    }
+                    placeholder="Enter your name"
+                    className="h-14 w-full rounded-lg border border-[#E5E5E5] bg-[#F6F6F6] px-4 py-3.5 text-base text-[#1A1A1A] placeholder:text-[#9E9E9E] focus:border-[#000000] focus:outline-none focus:ring-2 focus:ring-[#000000]/20"
+                  />
+                </div>
+              )}
+
               <div className="flex flex-col">
                 <label
                   className="text-sm font-medium text-[#1A1A1A] mb-2"
-                  htmlFor="email"
+                  htmlFor="username"
                 >
-                  Email
+                  Username
                 </label>
                 <div className="relative">
                   <input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
+                    id="username"
+                    name="username"
+                    value={form.username}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        username: event.target.value,
+                      }))
+                    }
+                    placeholder="Enter your username"
                     className="h-14 w-full rounded-lg border border-[#E5E5E5] bg-[#F6F6F6] px-4 py-3.5 text-base text-[#1A1A1A] placeholder:text-[#9E9E9E] focus:border-[#000000] focus:outline-none focus:ring-2 focus:ring-[#000000]/20"
                   />
                 </div>
@@ -83,6 +189,14 @@ export default function Auth() {
                 <div className="relative flex w-full items-center">
                   <input
                     id="password"
+                    name="password"
+                    value={form.password}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        password: event.target.value,
+                      }))
+                    }
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     className="h-14 w-full rounded-lg border border-[#E5E5E5] bg-[#F6F6F6] pl-4 pr-12 py-3.5 text-base text-[#1A1A1A] placeholder:text-[#9E9E9E] focus:border-[#000000] focus:outline-none focus:ring-2 focus:ring-[#000000]/20"
@@ -97,34 +211,67 @@ export default function Auth() {
                     </span>
                   </button>
                 </div>
-                {/* {authMode === "signin" && (
-                    <a
-                      className="mt-2 self-end text-sm text-[#6B6B6B] hover:text-[#000000]"
-                      href="#"
-                    >
-                      Forgot Password?
-                    </a>
-                  )} */}
               </div>
+
+              {authMode === "signup" && (
+                <div className="flex flex-col">
+                  <label
+                    className="text-sm font-medium text-[#1A1A1A] mb-2"
+                    htmlFor="role"
+                  >
+                    I want to
+                  </label>
+                  <select
+                    id="role"
+                    name="role"
+                    value={form.role}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        role: event.target.value as Role,
+                      }))
+                    }
+                    className="h-14 w-full rounded-lg border border-[#E5E5E5] bg-[#F6F6F6] px-4 text-base text-[#1A1A1A] focus:border-[#000000] focus:outline-none focus:ring-2 focus:ring-[#000000]/20"
+                  >
+                    <option value="RIDER">Book rides</option>
+                    <option value="DRIVER">Drive passengers</option>
+                  </select>
+                </div>
+              )}
+
+              {(error || message) && (
+                <p
+                  className={`text-sm ${
+                    error ? "text-red-500" : "text-green-600"
+                  }`}
+                >
+                  {error || message}
+                </p>
+              )}
 
               <div className="pt-4">
                 <button
-                  className="flex h-14 w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-[#000000] text-base font-bold text-white transition-colors hover:bg-opacity-90"
+                  className="flex h-14 w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-[#000000] text-base font-bold text-white transition-colors hover:bg-opacity-90 disabled:opacity-50"
                   type="submit"
+                  disabled={loading}
                 >
                   <span className="truncate">
-                    {authMode === "signin" ? "Sign In" : "Create Account"}
+                    {loading
+                      ? "Please wait..."
+                      : authMode === "signin"
+                      ? "Sign In"
+                      : "Create Account"}
                   </span>
                 </button>
               </div>
             </form>
 
             <div className="my-8 flex items-center">
-              <hr className="flex-grow border-t border-[#E5E5E5]" />
+              <hr className="grow border-t border-[#E5E5E5]" />
               <span className="px-4 text-sm text-[#6B6B6B]">
                 Or continue with
               </span>
-              <hr className="flex-grow border-t border-[#E5E5E5]" />
+              <hr className="grow border-t border-[#E5E5E5]" />
             </div>
 
             <div className="flex items-center justify-center gap-4">
@@ -169,7 +316,7 @@ export default function Auth() {
             </div>
 
             <p className="mt-12 text-center text-xs text-[#6B6B6B]">
-              By signing in, you agree to RideShare's{" "}
+              By signing in, you agree to RideShare&apos;s{" "}
               <a className="underline hover:text-[#000000]" href="#">
                 Terms of Service
               </a>{" "}
@@ -182,12 +329,14 @@ export default function Auth() {
           </div>
         </div>
 
-        {/* Right Column - Image */}
-        <div className="hidden md:block md:w-1/2">
-          <img
+        <div className="relative hidden md:block md:w-1/2">
+          <Image
             alt="Abstract gradient background representing motion and elegance"
-            className="h-full w-full object-cover"
+            className="object-cover"
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHPJJYQ2DIB8yIFX533SEvyEZUuOLAcle0r58HA386bF9nPfNlTyyNkPVOGRPk01UOo3zsYGheZ8fJsOQO3UtKw07uASqVhR_9FxkDFYSkIFiZ3CmYLLYymPVARQ4Yuc-h01yl4gm9q-dLc3jwbyKIKDPHN1TKMLri6f5m2qAh7JXvDQFhZHFkSqDhZPwAy0iDFAYLEfVukZlrUe9ba3ePX8ivGlNkPfQm0Pz39jk7K3zPZHW8QieOtuw7eD4shKosn2O7feFVF3A"
+            fill
+            priority
+            sizes="(min-width: 768px) 50vw, 100vw"
           />
         </div>
       </div>

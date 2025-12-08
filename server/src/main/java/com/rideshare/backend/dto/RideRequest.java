@@ -59,4 +59,14 @@ public class RideRequest {
     public void setStatus(Status status) {
         this.status = status;
     }
+
+    public Double getFare() {
+        return fare;
+    }
+
+    public void setFare(Double fare) {
+        this.fare = fare;
+    }
+
+    private Double fare;
 }

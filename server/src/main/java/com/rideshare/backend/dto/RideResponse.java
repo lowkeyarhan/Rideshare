@@ -68,4 +68,14 @@ public class RideResponse {
     public void setRideTime(LocalDateTime rideTime) {
         this.rideTime = rideTime;
     }
+
+    public Double getFare() {
+        return fare;
+    }
+
+    public void setFare(Double fare) {
+        this.fare = fare;
+    }
+
+    private Double fare;
 }

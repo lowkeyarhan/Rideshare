@@ -9,7 +9,6 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,6 +27,7 @@ public class AuthController {
         User user = userService.register(request);
         Map<String, Object> body = new HashMap<>();
         body.put("id", user.getId());
+        body.put("name", user.getName());
         body.put("username", user.getUsername());
         body.put("role", user.getRole());
         return ResponseEntity.ok(body);
@@ -42,6 +42,8 @@ public class AuthController {
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
         Map<String, Object> body = new HashMap<>();
         body.put("token", token);
+        body.put("id", user.getId());
+        body.put("name", user.getName());
         body.put("username", user.getUsername());
         body.put("role", user.getRole());
         return ResponseEntity.ok(body);

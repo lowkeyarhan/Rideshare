@@ -1,6 +1,16 @@
 import React from "react";
 
-const SidebarP = () => (
+type SidebarProps = {
+  name?: string;
+  subtitle?: string;
+  onLogout?: () => void;
+};
+
+const SidebarP = ({
+  name = "Passenger",
+  subtitle = "Welcome back",
+  onLogout,
+}: SidebarProps) => (
   <aside className="flex w-64 flex-col border-r border-[#E5E5E5] bg-[#FFFFFF] p-4">
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3 p-2">
@@ -14,10 +24,10 @@ const SidebarP = () => (
         />
         <div className="flex flex-col">
           <h1 className="text-[#141414] text-base font-medium leading-normal">
-            Alex Morgan
+            {name}
           </h1>
           <p className="text-[#707070] text-sm font-normal leading-normal">
-            4.92 ★
+            {subtitle}
           </p>
         </div>
       </div>
@@ -60,13 +70,14 @@ const SidebarP = () => (
       </nav>
     </div>
     <div className="mt-auto">
-      <a
-        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-black/5 text-[#707070]"
-        href="#"
+      <button
+        className="flex w-full items-center justify-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-[#707070] hover:bg-black/5 cursor-pointer"
+        onClick={onLogout}
+        type="button"
       >
         <span className="material-symbols-outlined">logout</span>
-        <p className="text-sm font-medium leading-normal">Log Out</p>
-      </a>
+        Log Out
+      </button>
     </div>
   </aside>
 );

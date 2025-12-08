@@ -18,6 +18,7 @@ public class RideMapper {
         ride.setDropLocation(request.getDropLocation());
         ride.setStatus(request.getStatus());
         ride.setRideTime(LocalDateTime.now());
+        ride.setFare(request.getFare());
         return ride;
     }
 
@@ -30,6 +31,7 @@ public class RideMapper {
         response.setDropLocation(ride.getDropLocation());
         response.setStatus(ride.getStatus());
         response.setRideTime(ride.getRideTime());
+        response.setFare(ride.getFare());
         return response;
     }
 }

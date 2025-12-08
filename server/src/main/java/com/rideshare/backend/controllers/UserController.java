@@ -1,5 +1,7 @@
 package com.rideshare.backend.controllers;
 
+import com.rideshare.backend.dto.UserResponse;
+import com.rideshare.backend.mapper.UserMapper;
 import com.rideshare.backend.model.User;
 import com.rideshare.backend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,11 +19,11 @@ public class UserController {
     private UserService userService;
 
     @GetMapping("/{username}")
-    public ResponseEntity<User> getUserByUsername(@PathVariable String username) {
+    public ResponseEntity<UserResponse> getUserByUsername(@PathVariable String username) {
         User user = userService.findByUsername(username);
         if (user == null) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(UserMapper.toResponse(user));
     }
 }

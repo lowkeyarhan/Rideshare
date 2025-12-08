@@ -1,6 +1,22 @@
-import React from "react";
+"use client";
+
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { isAuthenticated, getStoredUser } from "@/src/libs/auth";
 
 export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      const user = getStoredUser();
+      if (user?.role === "DRIVER") {
+        router.push("/dashboard/driver");
+      } else {
+        router.push("/dashboard/passenger");
+      }
+    }
+  }, [router]);
   return (
     <div className="bg-background font-display text-primary">
       <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
@@ -133,7 +149,7 @@ export default function Home() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="flex flex-1 gap-4 rounded-xl border border-[#e5e7eb] bg-[#f3f4f6] p-6 flex-col">
                       <div className="text-[#111827]">
-                        <span className="material-symbols-outlined !text-3xl">
+                        <span className="material-symbols-outlined text-3xl!">
                           shield
                         </span>
                       </div>
@@ -149,7 +165,7 @@ export default function Home() {
                     </div>
                     <div className="flex flex-1 gap-4 rounded-xl border border-[#e5e7eb] bg-[#f3f4f6] p-6 flex-col">
                       <div className="text-[#111827]">
-                        <span className="material-symbols-outlined !text-3xl">
+                        <span className="material-symbols-outlined text-3xl!">
                           directions_car
                         </span>
                       </div>
@@ -165,7 +181,7 @@ export default function Home() {
                     </div>
                     <div className="flex flex-1 gap-4 rounded-xl border border-[#e5e7eb] bg-[#f3f4f6] p-6 flex-col">
                       <div className="text-[#111827]">
-                        <span className="material-symbols-outlined !text-3xl">
+                        <span className="material-symbols-outlined text-3xl!">
                           receipt_long
                         </span>
                       </div>
@@ -197,7 +213,7 @@ export default function Home() {
                           pin_drop
                         </span>
                       </div>
-                      <div className="w-[2px] bg-[#e5e7eb] h-full grow"></div>
+                      <div className="w-1 bg-[#6b7280] h-full grow"></div>
                     </div>
                     <div className="flex flex-1 flex-col pb-10 pt-3">
                       <p className="text-[#111827] text-lg font-bold leading-normal">
@@ -208,13 +224,13 @@ export default function Home() {
                       </p>
                     </div>
                     <div className="flex flex-col items-center gap-2">
-                      <div className="w-[2px] bg-[#e5e7eb] h-full grow"></div>
+                      <div className="w-1 bg-[#6b7280] h-full grow"></div>
                       <div className="text-[#111827] p-2 bg-[#f3f4f6] rounded-full border border-[#e5e7eb]">
                         <span className="material-symbols-outlined">
                           directions_car
                         </span>
                       </div>
-                      <div className="w-[2px] bg-[#e5e7eb] h-full grow"></div>
+                      <div className="w-1 bg-[#6b7280] h-full grow"></div>
                     </div>
                     <div className="flex flex-1 flex-col pb-10">
                       <p className="text-[#111827] text-lg font-bold leading-normal">
@@ -225,7 +241,7 @@ export default function Home() {
                       </p>
                     </div>
                     <div className="flex flex-col items-center gap-2 pb-3">
-                      <div className="w-[2px] bg-[#e5e7eb] h-full grow"></div>
+                      <div className="w-1 bg-[#6b7280] h-full grow"></div>
                       <div className="text-[#111827] p-2 bg-[#f3f4f6] rounded-full border border-[#e5e7eb]">
                         <span className="material-symbols-outlined">trip</span>
                       </div>

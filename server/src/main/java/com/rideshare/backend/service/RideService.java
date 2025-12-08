@@ -2,6 +2,7 @@ package com.rideshare.backend.service;
 
 import com.rideshare.backend.dto.RideRequest;
 import com.rideshare.backend.dto.RideResponse;
+import com.rideshare.backend.dto.RideUpdateRequest;
 import com.rideshare.backend.mapper.RideMapper;
 import com.rideshare.backend.model.Ride;
 import com.rideshare.backend.repository.RideRepository;
@@ -35,10 +36,28 @@ public class RideService {
         return rides.stream().map(RideMapper::toResponse).collect(Collectors.toList());
     }
 
+    // get available rides (REQUESTED status with no driver assigned)
+    public List<RideResponse> getAvailableRides() {
+        List<Ride> rides = rideRepository.getAvailableRides();
+        return rides.stream().map(RideMapper::toResponse).collect(Collectors.toList());
+    }
+
     // driver accepts/completes a ride (update ride status and assign driverId)
-    public RideResponse updateRide(RideRequest request) {
-        Ride ride = RideMapper.toEntity(request);
-        Ride updated = rideRepository.updateRide(ride);
+    public RideResponse updateRide(String rideId, RideUpdateRequest request) {
+        Ride existingRide = rideRepository.getRideById(rideId);
+        if (existingRide == null) {
+            throw new RuntimeException("Ride not found with id: " + rideId);
+        }
+
+        // Update only the fields that are provided
+        if (request.getDriverId() != null) {
+            existingRide.setDriverId(request.getDriverId());
+        }
+        if (request.getStatus() != null) {
+            existingRide.setStatus(request.getStatus());
+        }
+
+        Ride updated = rideRepository.updateRide(existingRide);
         return RideMapper.toResponse(updated);
     }
 

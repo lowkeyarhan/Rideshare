@@ -1,6 +1,16 @@
 import React from "react";
 
-const SidebarD = () => (
+type SidebarProps = {
+  name?: string;
+  subtitle?: string;
+  onLogout?: () => void;
+};
+
+const SidebarD = ({
+  name = "Driver",
+  subtitle = "RideShare Driver",
+  onLogout,
+}: SidebarProps) => (
   <aside className="flex w-64 flex-col border-r border-[#E5E5E5] bg-[#FFFFFF] p-4">
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
@@ -14,10 +24,10 @@ const SidebarD = () => (
         />
         <div className="flex flex-col">
           <h1 className="text-[#1A1A1A] text-base font-bold leading-normal">
-            John Doe
+            {name}
           </h1>
           <p className="text-[#5C5C5C] text-sm font-normal leading-normal">
-            RideShare Driver
+            {subtitle}
           </p>
         </div>
       </div>
@@ -83,12 +93,19 @@ const SidebarD = () => (
       </nav>
     </div>
     <div className="mt-auto">
+      <button
+        className="mb-4 flex w-full items-center justify-center rounded-lg border border-[#E5E5E5] px-3 py-2 text-sm font-semibold text-[#1A1A1A] hover:bg-[#F7F7F7] cursor-pointer"
+        onClick={onLogout}
+        type="button"
+      >
+        Log Out
+      </button>
       <div className="flex items-center justify-between gap-4 py-2">
         <p className="text-[#1A1A1A] text-lg font-bold">You are online</p>
-        <label className="relative h-[28px] w-[48px] cursor-pointer">
+        <label className="relative h-7 w-12 cursor-pointer">
           <input defaultChecked className="peer sr-only" type="checkbox" />
           <div className="h-full w-full rounded-full bg-[#22C55E] transition-colors"></div>
-          <div className="absolute left-1 top-1 h-[20px] w-[20px] rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-full"></div>
+          <div className="absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-full"></div>
         </label>
       </div>
     </div>
