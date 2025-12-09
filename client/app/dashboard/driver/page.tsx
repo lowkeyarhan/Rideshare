@@ -34,6 +34,13 @@ function DriverDashboard() {
   const [searchText, setSearchText] = useState("");
   const [searchResults, setSearchResults] = useState<Ride[]>([]);
   const [showSearch, setShowSearch] = useState(false);
+  const [minFare, setMinFare] = useState("");
+  const [maxFare, setMaxFare] = useState("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<string>("");
+  const [filteredRides, setFilteredRides] = useState<Ride[]>([]);
+  const [isFiltered, setIsFiltered] = useState(false);
   const hasLoadedData = useRef(false);
 
   useEffect(() => {
@@ -157,11 +164,112 @@ function DriverDashboard() {
       return;
     }
     try {
+      setLoading(true);
       const data = await searchRides(searchText);
       setSearchResults(data);
+      if (data.length === 0) {
+        alert("No rides found matching your search");
+      }
     } catch (err) {
       console.error("Search failed:", err);
-      alert("Unable to search rides");
+      alert("Unable to search rides. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFilterByFare = async () => {
+    if (!minFare || !maxFare) {
+      alert("Please enter both min and max fare");
+      return;
+    }
+    const min = parseFloat(minFare);
+    const max = parseFloat(maxFare);
+    if (isNaN(min) || isNaN(max) || min < 0 || max < min) {
+      alert("Please enter valid fare range (min must be less than max)");
+      return;
+    }
+    try {
+      setLoading(true);
+      const { filterRidesByDistance } = await import(
+        "@/src/libs/driverDashboardApi"
+      );
+      const data = await filterRidesByDistance(min, max);
+      setFilteredRides(data);
+      setIsFiltered(true);
+      if (data.length === 0) {
+        alert(`No rides found with fare between $${min} and $${max}`);
+      }
+    } catch (err) {
+      console.error("Filter failed:", err);
+      alert("Unable to filter rides. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSort = async () => {
+    try {
+      setLoading(true);
+      const { sortRidesByFare } = await import("@/src/libs/driverDashboardApi");
+      const data = await sortRidesByFare(sortOrder);
+      setFilteredRides(data);
+      setIsFiltered(true);
+    } catch (err) {
+      console.error("Sort failed:", err);
+      alert("Unable to sort rides. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFilterByStatus = async () => {
+    if (!filterStatus) {
+      setIsFiltered(false);
+      setFilteredRides([]);
+      return;
+    }
+    try {
+      setLoading(true);
+      const { filterByStatusAndKeyword } = await import(
+        "@/src/libs/driverDashboardApi"
+      );
+      const data = await filterByStatusAndKeyword(filterStatus, searchText);
+      setFilteredRides(data);
+      setIsFiltered(true);
+      if (data.length === 0) {
+        alert(`No ${filterStatus.toLowerCase()} rides found`);
+      }
+    } catch (err) {
+      console.error("Filter failed:", err);
+      alert("Unable to filter rides. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetFilters = async () => {
+    setSearchText("");
+    setMinFare("");
+    setMaxFare("");
+    setSortOrder("desc");
+    setFilterStatus("");
+    setSearchResults([]);
+    setFilteredRides([]);
+    setIsFiltered(false);
+    try {
+      setLoading(true);
+      const [assignedData, availableData] = await Promise.all([
+        fetchDriverRides().catch(() => []),
+        fetchAvailableRides().catch(() => []),
+      ]);
+      setAllDriverRides(assignedData);
+      setAvailableRides(availableData);
+    } catch (err) {
+      console.error("Reset failed:", err);
+      alert("Unable to reset filters. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -267,34 +375,128 @@ function DriverDashboard() {
               Here are the available rides in your area.
             </p>
 
-            <div className="mt-4 flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Search rides by location..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                className="flex-1 rounded-md border border-[#E5E5E5] bg-white px-4 py-2 text-sm focus:border-[#141414] focus:outline-none"
-              />
-              <button
-                onClick={handleSearch}
-                className="px-4 py-2 bg-[#1A1A1A] text-white text-sm font-semibold rounded-md hover:bg-opacity-90 flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-lg">
-                  search
-                </span>
-                Search
-              </button>
-              {searchText && (
+            <div className="mt-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Search rides by location..."
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                  className="flex-1 rounded-md border border-[#E5E5E5] bg-white px-4 py-2 text-sm focus:border-[#141414] focus:outline-none"
+                />
                 <button
-                  onClick={() => {
-                    setSearchText("");
-                    setSearchResults([]);
-                  }}
-                  className="px-4 py-2 bg-[#F7F7F7] text-[#1A1A1A] text-sm font-semibold rounded-md hover:bg-[#E5E5E5]"
+                  onClick={handleSearch}
+                  className="px-4 py-2 bg-[#1A1A1A] text-white text-sm font-semibold rounded-md hover:bg-opacity-90 flex items-center gap-2"
                 >
-                  Clear
+                  <span className="material-symbols-outlined text-lg">
+                    search
+                  </span>
+                  Search
                 </button>
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="px-4 py-2 bg-[#F7F7F7] text-[#1A1A1A] text-sm font-semibold rounded-md hover:bg-[#E5E5E5] flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-lg">
+                    {showFilters ? "expand_less" : "tune"}
+                  </span>
+                  {showFilters ? "Hide" : "Filters"}
+                </button>
+              </div>
+
+              {showFilters && (
+                <div className="rounded-lg bg-white border border-[#E5E5E5] p-4 space-y-4">
+                  <div className="flex flex-wrap gap-4">
+                    <div className="flex gap-2 items-end">
+                      <div>
+                        <label className="text-xs font-medium text-[#5C5C5C] mb-1.5 block">
+                          Min Fare ($)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="0"
+                          value={minFare}
+                          onChange={(e) => setMinFare(e.target.value)}
+                          className="w-24 rounded-md border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2 text-sm focus:border-[#141414] focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-[#5C5C5C] mb-1.5 block">
+                          Max Fare ($)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="100"
+                          value={maxFare}
+                          onChange={(e) => setMaxFare(e.target.value)}
+                          className="w-24 rounded-md border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2 text-sm focus:border-[#141414] focus:outline-none"
+                        />
+                      </div>
+                      <button
+                        onClick={handleFilterByFare}
+                        className="px-4 py-2 bg-[#1A1A1A] text-white text-sm font-semibold rounded-md hover:bg-opacity-90"
+                      >
+                        Apply
+                      </button>
+                    </div>
+
+                    <div className="flex gap-2 items-end">
+                      <div>
+                        <label className="text-xs font-medium text-[#5C5C5C] mb-1.5 block">
+                          Status
+                        </label>
+                        <select
+                          value={filterStatus}
+                          onChange={(e) => setFilterStatus(e.target.value)}
+                          className="rounded-md border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2 text-sm focus:border-[#141414] focus:outline-none"
+                        >
+                          <option value="">All</option>
+                          <option value="REQUESTED">Requested</option>
+                          <option value="ACCEPTED">Accepted</option>
+                          <option value="COMPLETED">Completed</option>
+                        </select>
+                      </div>
+                      <button
+                        onClick={handleFilterByStatus}
+                        className="px-4 py-2 bg-[#1A1A1A] text-white text-sm font-semibold rounded-md hover:bg-opacity-90"
+                      >
+                        Apply
+                      </button>
+                    </div>
+
+                    <div className="flex gap-2 items-end">
+                      <div>
+                        <label className="text-xs font-medium text-[#5C5C5C] mb-1.5 block">
+                          Sort by Fare
+                        </label>
+                        <select
+                          value={sortOrder}
+                          onChange={(e) =>
+                            setSortOrder(e.target.value as "asc" | "desc")
+                          }
+                          className="rounded-md border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2 text-sm focus:border-[#141414] focus:outline-none"
+                        >
+                          <option value="asc">Low to High</option>
+                          <option value="desc">High to Low</option>
+                        </select>
+                      </div>
+                      <button
+                        onClick={handleSort}
+                        className="px-4 py-2 bg-[#1A1A1A] text-white text-sm font-semibold rounded-md hover:bg-opacity-90"
+                      >
+                        Sort
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={handleResetFilters}
+                      className="px-4 py-2 bg-[#F7F7F7] text-[#1A1A1A] text-sm font-semibold rounded-md hover:bg-[#E5E5E5] self-end"
+                    >
+                      Reset All
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </header>
@@ -305,6 +507,8 @@ function DriverDashboard() {
                 <h2 className="mb-4 text-xl font-bold text-[#1A1A1A]">
                   {searchResults.length > 0
                     ? "Search Results"
+                    : isFiltered
+                    ? "Filtered Results"
                     : "Available Ride Requests"}
                 </h2>
                 {loading ? (
@@ -361,6 +565,95 @@ function DriverDashboard() {
                       </div>
                     ))}
                   </div>
+                ) : isFiltered ? (
+                  filteredRides.length === 0 ? (
+                    <div>
+                      <p className="text-sm text-[#5C5C5C]">
+                        No rides match your filter criteria.
+                      </p>
+                      <button
+                        onClick={handleResetFilters}
+                        className="mt-3 rounded-lg bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600"
+                      >
+                        Clear Filters
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {filteredRides.map((ride) => (
+                        <div
+                          key={ride.id}
+                          className="flex flex-col items-start gap-4 rounded-lg border border-[#E5E5E5] bg-white p-4 transition-all duration-200 hover:shadow-md sm:flex-row sm:items-center"
+                        >
+                          <div className="grow space-y-3">
+                            <div className="flex items-center gap-3">
+                              <span className="material-symbols-outlined text-green-500">
+                                trip_origin
+                              </span>
+                              <p className="text-[#1A1A1A] font-medium">
+                                {ride.pickupLocation}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="material-symbols-outlined text-red-500">
+                                location_on
+                              </span>
+                              <p className="text-[#1A1A1A] font-medium">
+                                {ride.dropLocation}
+                              </p>
+                            </div>
+                            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[#5C5C5C]">
+                              <div className="flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-sm">
+                                  schedule
+                                </span>
+                                <span>
+                                  {formatTime(
+                                    ride.requestedAt || ride.createdAt
+                                  )}
+                                </span>
+                              </div>
+                              {ride.distance > 0 && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="material-symbols-outlined text-sm">
+                                    route
+                                  </span>
+                                  <span>{ride.distance.toFixed(1)} km</span>
+                                </div>
+                              )}
+                              {ride.fare > 0 && (
+                                <div className="flex items-center gap-1.5 text-green-600 font-semibold">
+                                  <span className="material-symbols-outlined text-sm">
+                                    payments
+                                  </span>
+                                  <span>${ride.fare.toFixed(2)}</span>
+                                </div>
+                              )}
+                              {ride.userUsername && (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="material-symbols-outlined text-sm">
+                                    person
+                                  </span>
+                                  <span>{ride.userUsername}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex w-full gap-2 self-stretch sm:w-auto sm:flex-col">
+                            <button
+                              onClick={() => handleAcceptRide(ride.id)}
+                              disabled={accepting === ride.id}
+                              className="flex-1 rounded-lg bg-black px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1D4ED8] disabled:opacity-50"
+                            >
+                              {accepting === ride.id
+                                ? "Accepting..."
+                                : "Accept"}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
                 ) : availableRides.length === 0 ? (
                   <div>
                     <p className="text-sm text-[#5C5C5C]">

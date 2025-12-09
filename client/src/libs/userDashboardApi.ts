@@ -81,3 +81,15 @@ export const getUserSpending = (userId: string) =>
   apiClient
     .get<UserSpendingResponse>(`/api/v1/analytics/user/${userId}/spending`)
     .then(({ data }) => data);
+
+// Admin: Get rides for a specific user
+export const getRidesForUser = (userId: string) =>
+  apiClient
+    .get<Ride[]>(`/api/v1/rides/user/${userId}`)
+    .then(({ data }) => data);
+
+// Admin: Get rides for a specific user filtered by status
+export const getRidesForUserByStatus = (userId: string, status: string) =>
+  apiClient
+    .get<Ride[]>(`/api/v1/rides/user/${userId}/status/${status}`)
+    .then(({ data }) => data);

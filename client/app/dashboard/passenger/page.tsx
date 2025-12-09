@@ -118,41 +118,77 @@ function Dashboard() {
     if (!searchText.trim()) {
       const data = await fetchUserRides();
       setRides(data);
+      setSuccess("");
       return;
     }
     try {
+      setLoading(true);
       const data = await searchRides(searchText);
       setRides(data);
       setError("");
+      setSuccess(
+        data.length > 0
+          ? `Found ${data.length} ride(s)`
+          : "No rides found matching your search"
+      );
     } catch (err) {
-      setError("Unable to search rides");
+      console.error("Search error:", err);
+      setError("Unable to search rides. Please try again.");
+      setSuccess("");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleFilterByFare = async () => {
     if (!minFare || !maxFare) {
       setError("Please enter both min and max fare");
+      setSuccess("");
+      return;
+    }
+    const min = parseFloat(minFare);
+    const max = parseFloat(maxFare);
+    if (isNaN(min) || isNaN(max) || min < 0 || max < min) {
+      setError("Please enter valid fare range (min must be less than max)");
+      setSuccess("");
       return;
     }
     try {
-      const data = await filterRidesByDistance(
-        parseFloat(minFare),
-        parseFloat(maxFare)
-      );
+      setLoading(true);
+      const data = await filterRidesByDistance(min, max);
       setRides(data);
       setError("");
+      setSuccess(
+        data.length > 0
+          ? `Found ${data.length} ride(s) with fare between $${min} and $${max}`
+          : "No rides found in this fare range"
+      );
     } catch (err) {
-      setError("Unable to filter rides");
+      console.error("Filter error:", err);
+      setError("Unable to filter rides. Please try again.");
+      setSuccess("");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSort = async () => {
     try {
+      setLoading(true);
       const data = await sortRidesByFare(sortOrder);
       setRides(data);
       setError("");
+      setSuccess(
+        `Sorted ${data.length} ride(s) by fare (${
+          sortOrder === "asc" ? "low to high" : "high to low"
+        })`
+      );
     } catch (err) {
-      setError("Unable to sort rides");
+      console.error("Sort error:", err);
+      setError("Unable to sort rides. Please try again.");
+      setSuccess("");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -162,11 +198,17 @@ function Dashboard() {
     setMaxFare("");
     setSortOrder("desc");
     try {
+      setLoading(true);
       const data = await fetchUserRides();
       setRides(data);
       setError("");
+      setSuccess("Filters reset - showing all rides");
     } catch (err) {
-      setError("Unable to reset filters");
+      console.error("Reset error:", err);
+      setError("Unable to reset filters. Please try again.");
+      setSuccess("");
+    } finally {
+      setLoading(false);
     }
   };
 

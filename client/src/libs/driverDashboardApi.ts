@@ -61,3 +61,35 @@ export const getDriverEarnings = (driverId: string) =>
   apiClient
     .get<DriverSummaryResponse>(`/api/v1/analytics/driver/${driverId}/earnings`)
     .then(({ data }) => data);
+
+// Filter rides by distance/fare range
+export const filterRidesByDistance = (min: number, max: number) =>
+  apiClient
+    .get<Ride[]>(`/api/v1/rides/filter-distance?min=${min}&max=${max}`)
+    .then(({ data }) => data);
+
+// Filter rides by date range
+export const filterRidesByDateRange = (start: string, end: string) =>
+  apiClient
+    .get<Ride[]>(`/api/v1/rides/filter-date-range?start=${start}&end=${end}`)
+    .then(({ data }) => data);
+
+// Sort rides by fare
+export const sortRidesByFare = (order: "asc" | "desc" = "asc") =>
+  apiClient
+    .get<Ride[]>(`/api/v1/rides/sort?order=${order}`)
+    .then(({ data }) => data);
+
+// Filter by status with optional keyword
+export const filterByStatusAndKeyword = (status: string, search?: string) =>
+  apiClient
+    .get<Ride[]>(
+      `/api/v1/rides/filter-status?status=${status}${
+        search ? `&search=${encodeURIComponent(search)}` : ""
+      }`
+    )
+    .then(({ data }) => data);
+
+// Get rides on specific date
+export const getRidesOnDate = (date: string) =>
+  apiClient.get<Ride[]>(`/api/v1/rides/date/${date}`).then(({ data }) => data);
