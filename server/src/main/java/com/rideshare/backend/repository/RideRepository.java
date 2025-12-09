@@ -1,62 +1,27 @@
 package com.rideshare.backend.repository;
 
-import com.rideshare.backend.model.enums.Status;
-import java.util.List;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.stereotype.Repository;
-
 import com.rideshare.backend.model.Ride;
+import com.rideshare.backend.model.enums.Status;
+import java.time.LocalDate;
+import java.util.List;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
-@Repository
-public class RideRepository {
+public interface RideRepository extends MongoRepository<Ride, String> {
+    // Find rides by user ID
+    List<Ride> findByUserId(String userId);
 
-    @Autowired
-    private MongoTemplate mongoTemplate;
+    // Find rides by user ID and status
+    List<Ride> findByUserIdAndStatus(String userId, Status status);
 
-    // user requests a ride (create ride)
-    public Ride requestRide(Ride ride) {
-        return mongoTemplate.save(ride);
-    }
+    // Find rides by driver ID
+    List<Ride> findByDriverId(String driverId);
 
-    // user views rides taken by them (user ride history)
-    public List<Ride> getRidesByUserId(String userId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("userId").is(userId));
-        return mongoTemplate.find(query, Ride.class);
-    }
+    // Find rides by driver ID and status
+    List<Ride> findByDriverIdAndStatus(String driverId, Status status);
 
-    // driver views pending ride requests (rides with status 'REQUESTED')
-    public List<Ride> getPendingRides() {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("status").is(Status.REQUESTED));
-        return mongoTemplate.find(query, Ride.class);
-    }
+    // Find rides by status
+    List<Ride> findByStatus(Status status);
 
-    // driver accepts/completes a ride (update ride status and assign driverId)
-    public Ride updateRide(Ride ride) {
-        return mongoTemplate.save(ride);
-    }
-
-    // driver views rides completed by them (driver ride history)
-    public List<Ride> getRidesByDriverId(String driverId) {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("driverId").is(driverId));
-        return mongoTemplate.find(query, Ride.class);
-    }
-
-    // get available rides (REQUESTED status with no driver)
-    public List<Ride> getAvailableRides() {
-        Query query = new Query();
-        query.addCriteria(Criteria.where("status").is(Status.REQUESTED)
-                .and("driverId").exists(false));
-        return mongoTemplate.find(query, Ride.class);
-    }
-
-    // get a single ride by ID
-    public Ride getRideById(String rideId) {
-        return mongoTemplate.findById(rideId, Ride.class);
-    }
+    // Find rides by creation date
+    List<Ride> findByCreatedDate(LocalDate createdDate);
 }

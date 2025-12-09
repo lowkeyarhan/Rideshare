@@ -14,6 +14,8 @@ public class RideMapper {
         Ride ride = new Ride();
         ride.setPickupLocation(request.getPickupLocation());
         ride.setDropLocation(request.getDropLocation());
+        ride.setDistanceKm(request.getDistanceKm() != null ? request.getDistanceKm() : 0.0);
+        ride.setFareAmount(request.getFareAmount() != null ? request.getFareAmount() : 0.0);
         return ride;
     }
 
@@ -22,11 +24,17 @@ public class RideMapper {
         RideResponse response = new RideResponse();
         response.setId(ride.getId());
         response.setUserId(ride.getUserId());
+        response.setPassengerUsername(ride.getPassengerUsername());
         response.setDriverId(ride.getDriverId());
+        response.setDriverUsername(ride.getDriverUsername());
         response.setPickupLocation(ride.getPickupLocation());
         response.setDropLocation(ride.getDropLocation());
+        response.setDistanceKm(ride.getDistanceKm());
+        response.setFareAmount(ride.getFareAmount());
         response.setStatus(ride.getStatus());
+        response.setCreatedDate(ride.getCreatedDate());
         response.setCreatedAt(ride.getCreatedAt());
+        response.setUpdatedAt(ride.getUpdatedAt());
         return response;
     }
 }

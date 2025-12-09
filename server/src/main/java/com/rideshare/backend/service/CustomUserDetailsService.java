@@ -16,14 +16,12 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Autowired
     private UserService userService;
 
+    // Load user details by username for authentication
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userService.findByUsername(username);
-        if (user == null) {
-            throw new UsernameNotFoundException("User not found: " + username);
-        }
+        User user = userService.getByUsername(username);
 
-        GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().name());
+        GrantedAuthority authority = new SimpleGrantedAuthority(user.getRole().name());
 
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),

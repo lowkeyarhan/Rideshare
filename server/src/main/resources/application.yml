@@ -4,7 +4,3 @@ spring:
 
   mongodb:
     uri: mongodb+srv://lowkeyarhan:terimaakichut80kiraftaarse@ridesharecluster0.tpeov9w.mongodb.net/rideshare?retryWrites=true&w=majority&appName=RideshareCluster0
-
-jwt:
-  secret: rideshare-super-secret-key
-  expiration: 3600000
