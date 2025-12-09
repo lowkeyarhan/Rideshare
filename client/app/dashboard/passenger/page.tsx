@@ -1,11 +1,24 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import SidebarP from "@/src/components/sidebarP";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
-import { createRideRequest, fetchUserRides } from "@/src/libs/userDashboardApi";
+import {
+  createRideRequest,
+  fetchUserRides,
+  searchRides,
+  filterRidesByDistance,
+  sortRidesByFare,
+  getUserSpending,
+} from "@/src/libs/userDashboardApi";
 import { getStoredUser, clearAuth } from "@/src/libs/auth";
 import type { Ride, User } from "@/src/libs/types";
 
@@ -19,16 +32,27 @@ function Dashboard() {
   const [dropLocation, setDropLocation] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [searchText, setSearchText] = useState("");
+  const [minFare, setMinFare] = useState("");
+  const [maxFare, setMaxFare] = useState("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [totalSpending, setTotalSpending] = useState<number>(0);
+  const [showFilters, setShowFilters] = useState(false);
+  const hasLoadedData = useRef(false);
 
   useEffect(() => {
+    if (hasLoadedData.current) return;
     const currentUser = getStoredUser();
     if (!currentUser) return;
 
     setUser(currentUser);
+    hasLoadedData.current = true;
+
+    // Load rides
     fetchUserRides()
-      .then((data) => {
-        console.log("Loaded rides:", data);
-        setRides(data);
+      .then((ridesData) => {
+        console.log("Loaded rides:", ridesData);
+        setRides(ridesData);
       })
       .catch((error) => {
         console.error("Error loading rides:", error);
@@ -40,6 +64,16 @@ function Dashboard() {
         }
       })
       .finally(() => setLoading(false));
+
+    // Load spending separately
+    getUserSpending(currentUser.id)
+      .then((spendingData) => {
+        setTotalSpending(spendingData.totalSpending || 0);
+      })
+      .catch((error) => {
+        console.error("Error loading spending:", error);
+        setTotalSpending(0);
+      });
   }, []);
 
   const logout = () => (clearAuth(), router.push("/auth"));
@@ -59,7 +93,16 @@ function Dashboard() {
       await createRideRequest({ pickupLocation, dropLocation });
       setSuccess("Ride requested successfully!");
       setDropLocation("");
-      setRides(await fetchUserRides());
+
+      const ridesData = await fetchUserRides();
+      setRides(ridesData);
+
+      // Update spending separately
+      getUserSpending(user.id)
+        .then((spendingData) =>
+          setTotalSpending(spendingData.totalSpending || 0)
+        )
+        .catch(() => {});
     } catch (err) {
       const errorMsg = (err as { response?: { data?: string } })?.response
         ?.data;
@@ -71,6 +114,62 @@ function Dashboard() {
     }
   };
 
+  const handleSearch = async () => {
+    if (!searchText.trim()) {
+      const data = await fetchUserRides();
+      setRides(data);
+      return;
+    }
+    try {
+      const data = await searchRides(searchText);
+      setRides(data);
+      setError("");
+    } catch (err) {
+      setError("Unable to search rides");
+    }
+  };
+
+  const handleFilterByFare = async () => {
+    if (!minFare || !maxFare) {
+      setError("Please enter both min and max fare");
+      return;
+    }
+    try {
+      const data = await filterRidesByDistance(
+        parseFloat(minFare),
+        parseFloat(maxFare)
+      );
+      setRides(data);
+      setError("");
+    } catch (err) {
+      setError("Unable to filter rides");
+    }
+  };
+
+  const handleSort = async () => {
+    try {
+      const data = await sortRidesByFare(sortOrder);
+      setRides(data);
+      setError("");
+    } catch (err) {
+      setError("Unable to sort rides");
+    }
+  };
+
+  const handleResetFilters = async () => {
+    setSearchText("");
+    setMinFare("");
+    setMaxFare("");
+    setSortOrder("desc");
+    try {
+      const data = await fetchUserRides();
+      setRides(data);
+      setError("");
+    } catch (err) {
+      setError("Unable to reset filters");
+    }
+  };
+
   const formatTime = (createdAt?: string) => {
     if (!createdAt) {
       return "Just now";
@@ -78,12 +177,16 @@ function Dashboard() {
     return new Date(createdAt).toLocaleString();
   };
 
-  const requestedCount = rides.filter(
-    (ride) => ride.status === "REQUESTED"
-  ).length;
-  const completedCount = rides.filter(
-    (ride) => ride.status === "COMPLETED"
-  ).length;
+  const { requestedCount, acceptedCount, completedCount } = useMemo(
+    () => ({
+      requestedCount: rides.filter((ride) => ride.status === "REQUESTED")
+        .length,
+      acceptedCount: rides.filter((ride) => ride.status === "ACCEPTED").length,
+      completedCount: rides.filter((ride) => ride.status === "COMPLETED")
+        .length,
+    }),
+    [rides]
+  );
 
   const getStatusBadgeClasses = (status: Ride["status"]) => {
     if (status === "REQUESTED") return "bg-yellow-100 text-[#AA6C00]";
@@ -191,10 +294,109 @@ function Dashboard() {
                     <h2 className="text-xl font-bold leading-tight">
                       Your Rides
                     </h2>
-                    <button className="text-sm font-semibold text-[#141414] hover:underline">
-                      View All
+                    <button
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="text-sm font-semibold text-[#141414] hover:underline flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-lg">
+                        {showFilters ? "expand_less" : "tune"}
+                      </span>
+                      {showFilters ? "Hide Filters" : "Filters"}
                     </button>
                   </div>
+
+                  {showFilters && (
+                    <div className="mb-6 space-y-4 border-b border-[#E5E5E5] pb-6">
+                      <div className="flex flex-wrap gap-4">
+                        <div className="flex-1 min-w-[200px]">
+                          <label className="text-xs font-medium text-[#707070] mb-1.5 block">
+                            Search Location
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              placeholder="Search pickup or drop..."
+                              value={searchText}
+                              onChange={(e) => setSearchText(e.target.value)}
+                              className="flex-1 rounded-md border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2 text-sm focus:border-[#141414] focus:outline-none"
+                            />
+                            <button
+                              onClick={handleSearch}
+                              className="px-4 py-2 bg-[#141414] text-white text-sm font-semibold rounded-md hover:bg-opacity-90"
+                            >
+                              Search
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-4">
+                        <div className="flex gap-2 items-end">
+                          <div>
+                            <label className="text-xs font-medium text-[#707070] mb-1.5 block">
+                              Min Fare ($)
+                            </label>
+                            <input
+                              type="number"
+                              placeholder="0"
+                              value={minFare}
+                              onChange={(e) => setMinFare(e.target.value)}
+                              className="w-24 rounded-md border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2 text-sm focus:border-[#141414] focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-[#707070] mb-1.5 block">
+                              Max Fare ($)
+                            </label>
+                            <input
+                              type="number"
+                              placeholder="100"
+                              value={maxFare}
+                              onChange={(e) => setMaxFare(e.target.value)}
+                              className="w-24 rounded-md border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2 text-sm focus:border-[#141414] focus:outline-none"
+                            />
+                          </div>
+                          <button
+                            onClick={handleFilterByFare}
+                            className="px-4 py-2 bg-[#141414] text-white text-sm font-semibold rounded-md hover:bg-opacity-90"
+                          >
+                            Filter
+                          </button>
+                        </div>
+
+                        <div className="flex gap-2 items-end">
+                          <div>
+                            <label className="text-xs font-medium text-[#707070] mb-1.5 block">
+                              Sort by Fare
+                            </label>
+                            <select
+                              value={sortOrder}
+                              onChange={(e) =>
+                                setSortOrder(e.target.value as "asc" | "desc")
+                              }
+                              className="rounded-md border border-[#E5E5E5] bg-[#F7F7F7] px-3 py-2 text-sm focus:border-[#141414] focus:outline-none"
+                            >
+                              <option value="asc">Low to High</option>
+                              <option value="desc">High to Low</option>
+                            </select>
+                          </div>
+                          <button
+                            onClick={handleSort}
+                            className="px-4 py-2 bg-[#141414] text-white text-sm font-semibold rounded-md hover:bg-opacity-90"
+                          >
+                            Sort
+                          </button>
+                        </div>
+
+                        <button
+                          onClick={handleResetFilters}
+                          className="px-4 py-2 bg-[#F7F7F7] text-[#141414] text-sm font-semibold rounded-md hover:bg-[#E5E5E5] self-end"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {loading ? (
                     <p className="text-sm text-[#707070]">
                       Loading ride data...
@@ -208,25 +410,44 @@ function Dashboard() {
                       {rides.map((ride) => (
                         <div
                           key={ride.id}
-                          className="flex items-center justify-between gap-4 border-b border-[#E5E5E5] pb-4 last:border-b-0 last:pb-0"
+                          className="flex items-start justify-between gap-4 border-b border-[#E5E5E5] pb-4 last:border-b-0 last:pb-0"
                         >
-                          <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#F7F7F7]">
+                          <div className="flex items-start gap-4 flex-1">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#F7F7F7] shrink-0">
                               <span className="material-symbols-outlined text-2xl text-[#141414]">
                                 directions_car
                               </span>
                             </div>
-                            <div>
+                            <div className="flex-1 min-w-0">
                               <p className="text-base font-semibold text-[#141414]">
                                 {ride.pickupLocation} → {ride.dropLocation}
                               </p>
-                              <p className="text-sm text-[#707070]">
-                                {formatTime(ride.createdAt)}
-                              </p>
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                                <p className="text-sm text-[#707070]">
+                                  {formatTime(
+                                    ride.requestedAt || ride.createdAt
+                                  )}
+                                </p>
+                                {ride.distance > 0 && (
+                                  <p className="text-sm text-[#707070]">
+                                    {ride.distance.toFixed(1)} km
+                                  </p>
+                                )}
+                                {ride.fare > 0 && (
+                                  <p className="text-sm font-semibold text-[#141414]">
+                                    ${ride.fare.toFixed(2)}
+                                  </p>
+                                )}
+                              </div>
+                              {ride.driverUsername && (
+                                <p className="text-xs text-[#707070] mt-1">
+                                  Driver: {ride.driverUsername}
+                                </p>
+                              )}
                             </div>
                           </div>
                           <span
-                            className={`text-sm font-semibold px-3 py-1 rounded-full ${getStatusBadgeClasses(
+                            className={`text-sm font-semibold px-3 py-1 rounded-full whitespace-nowrap ${getStatusBadgeClasses(
                               ride.status
                             )}`}
                           >
@@ -259,11 +480,23 @@ function Dashboard() {
                       </p>
                     </div>
                     <div className="flex items-center justify-between">
+                      <p className="text-base text-[#707070]">Accepted Rides</p>
+                      <p className="text-base font-bold text-[#141414]">
+                        {acceptedCount}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between">
                       <p className="text-base text-[#707070]">
                         Requested Rides
                       </p>
                       <p className="text-base font-bold text-[#141414]">
                         {requestedCount}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between pt-4 border-t border-[#E5E5E5]">
+                      <p className="text-base text-[#707070]">Total Spending</p>
+                      <p className="text-base font-bold text-[#141414]">
+                        ${totalSpending.toFixed(2)}
                       </p>
                     </div>
                   </div>

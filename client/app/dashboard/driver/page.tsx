@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "@/src/components/ProtectedRoute";
 import {
@@ -8,6 +14,8 @@ import {
   fetchAvailableRides,
   acceptRide,
   completeRide,
+  getDriverEarnings,
+  searchRides,
 } from "@/src/libs/driverDashboardApi";
 import { getStoredUser, clearAuth } from "@/src/libs/auth";
 import type { Ride, User } from "@/src/libs/types";
@@ -22,14 +30,26 @@ function DriverDashboard() {
   const [completing, setCompleting] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [totalEarnings, setTotalEarnings] = useState<number>(0);
+  const [searchText, setSearchText] = useState("");
+  const [searchResults, setSearchResults] = useState<Ride[]>([]);
+  const [showSearch, setShowSearch] = useState(false);
+  const hasLoadedData = useRef(false);
 
   useEffect(() => {
+    if (hasLoadedData.current) return;
     setMounted(true);
     const currentUser = getStoredUser();
     if (!currentUser) return;
 
     setUser(currentUser);
-    Promise.all([fetchDriverRides(), fetchAvailableRides()])
+    hasLoadedData.current = true;
+
+    // Load rides data
+    Promise.all([
+      fetchDriverRides().catch(() => []),
+      fetchAvailableRides().catch(() => []),
+    ])
       .then(([assignedData, availableData]) => {
         console.log("Driver assigned rides:", assignedData);
         console.log("Available rides:", availableData);
@@ -40,17 +60,42 @@ function DriverDashboard() {
         console.error("Error loading driver rides:", error);
       })
       .finally(() => setLoading(false));
+
+    // Load earnings separately to avoid blocking dashboard load
+    getDriverEarnings(currentUser.id)
+      .then((earningsData) => {
+        setTotalEarnings(earningsData.totalEarnings || 0);
+      })
+      .catch((error) => {
+        console.error("Error loading earnings:", error);
+        setTotalEarnings(0);
+      });
   }, []);
 
-  const activeRides = allDriverRides.filter(
-    (ride) => ride.status === "ACCEPTED"
-  );
-  const completed = allDriverRides.filter(
-    (ride) => ride.status === "COMPLETED"
-  );
-  const todaysEarnings = completed.length * 25; // Mock calculation: $25 per ride
+  const { activeRides, completed, todaysEarnings, acceptanceRate } =
+    useMemo(() => {
+      const activeRides = allDriverRides.filter(
+        (ride) => ride.status === "ACCEPTED"
+      );
+      const completed = allDriverRides.filter(
+        (ride) => ride.status === "COMPLETED"
+      );
+      const todaysEarnings = completed.reduce(
+        (sum, ride) => sum + (ride.fare || 0),
+        0
+      );
+      const acceptanceRate =
+        allDriverRides.length > 0
+          ? Math.round(
+              (allDriverRides.length /
+                (allDriverRides.length + availableRides.length)) *
+                100
+            )
+          : 95;
+      return { activeRides, completed, todaysEarnings, acceptanceRate };
+    }, [allDriverRides, availableRides]);
+
   const onlineHours = 6.5; // Mock data
-  const acceptanceRate = 95; // Mock data
 
   const logout = () => (clearAuth(), router.push("/auth"));
 
@@ -60,11 +105,18 @@ function DriverDashboard() {
     try {
       await acceptRide(rideId);
       const [assignedData, availableData] = await Promise.all([
-        fetchDriverRides(),
-        fetchAvailableRides(),
+        fetchDriverRides().catch(() => []),
+        fetchAvailableRides().catch(() => []),
       ]);
       setAllDriverRides(assignedData);
       setAvailableRides(availableData);
+
+      // Update earnings separately
+      getDriverEarnings(user.id)
+        .then((earningsData) =>
+          setTotalEarnings(earningsData.totalEarnings || 0)
+        )
+        .catch(() => {});
     } catch (error) {
       console.error(error);
       alert("Unable to accept ride. Please try again.");
@@ -74,20 +126,42 @@ function DriverDashboard() {
   };
 
   const handleCompleteRide = async (rideId: string) => {
+    if (!user) return;
     setCompleting(rideId);
     try {
       await completeRide(rideId);
       const [assignedData, availableData] = await Promise.all([
-        fetchDriverRides(),
-        fetchAvailableRides(),
+        fetchDriverRides().catch(() => []),
+        fetchAvailableRides().catch(() => []),
       ]);
       setAllDriverRides(assignedData);
       setAvailableRides(availableData);
+
+      // Update earnings separately
+      getDriverEarnings(user.id)
+        .then((earningsData) =>
+          setTotalEarnings(earningsData.totalEarnings || 0)
+        )
+        .catch(() => {});
     } catch (error) {
       console.error(error);
       alert("Unable to complete ride. Please try again.");
     } finally {
       setCompleting(null);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!searchText.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    try {
+      const data = await searchRides(searchText);
+      setSearchResults(data);
+    } catch (err) {
+      console.error("Search failed:", err);
+      alert("Unable to search rides");
     }
   };
 
@@ -192,16 +266,101 @@ function DriverDashboard() {
             <p className="text-[#5C5C5C]">
               Here are the available rides in your area.
             </p>
+
+            <div className="mt-4 flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Search rides by location..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                className="flex-1 rounded-md border border-[#E5E5E5] bg-white px-4 py-2 text-sm focus:border-[#141414] focus:outline-none"
+              />
+              <button
+                onClick={handleSearch}
+                className="px-4 py-2 bg-[#1A1A1A] text-white text-sm font-semibold rounded-md hover:bg-opacity-90 flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-lg">
+                  search
+                </span>
+                Search
+              </button>
+              {searchText && (
+                <button
+                  onClick={() => {
+                    setSearchText("");
+                    setSearchResults([]);
+                  }}
+                  className="px-4 py-2 bg-[#F7F7F7] text-[#1A1A1A] text-sm font-semibold rounded-md hover:bg-[#E5E5E5]"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </header>
 
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             <div className="space-y-8 lg:col-span-2">
               <div className="rounded-xl border border-[#E5E5E5] bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
                 <h2 className="mb-4 text-xl font-bold text-[#1A1A1A]">
-                  Available Ride Requests
+                  {searchResults.length > 0
+                    ? "Search Results"
+                    : "Available Ride Requests"}
                 </h2>
                 {loading ? (
                   <p className="text-sm text-[#5C5C5C]">Loading rides...</p>
+                ) : searchResults.length > 0 ? (
+                  <div className="space-y-4">
+                    {searchResults.map((ride) => (
+                      <div
+                        key={ride.id}
+                        className="flex flex-col gap-4 rounded-lg border border-[#E5E5E5] bg-[#F7F7F7] p-4 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="material-symbols-outlined text-green-600">
+                              trip_origin
+                            </span>
+                            <p className="text-[#1A1A1A] font-medium">
+                              {ride.pickupLocation}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="material-symbols-outlined text-red-500">
+                              location_on
+                            </span>
+                            <p className="text-[#1A1A1A] font-medium">
+                              {ride.dropLocation}
+                            </p>
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-4 text-sm text-[#5C5C5C]">
+                            {ride.distance > 0 && (
+                              <span>{ride.distance.toFixed(1)} km</span>
+                            )}
+                            {ride.fare > 0 && (
+                              <span className="font-semibold text-green-600">
+                                ${ride.fare.toFixed(2)}
+                              </span>
+                            )}
+                            {ride.userUsername && (
+                              <span>Passenger: {ride.userUsername}</span>
+                            )}
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                                ride.status === "REQUESTED"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : ride.status === "ACCEPTED"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-green-100 text-green-800"
+                              }`}
+                            >
+                              {ride.status}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : availableRides.length === 0 ? (
                   <div>
                     <p className="text-sm text-[#5C5C5C]">
@@ -238,14 +397,14 @@ function DriverDashboard() {
                     {availableRides.map((ride) => (
                       <div
                         key={ride.id}
-                        className="flex flex-col items-start gap-4 rounded-lg border border-[#E5E5E5] p-4 transition-colors duration-200 hover:bg-gray-50 sm:flex-row sm:items-center"
+                        className="flex flex-col items-start gap-4 rounded-lg border border-[#E5E5E5] bg-white p-4 transition-all duration-200 hover:shadow-md sm:flex-row sm:items-center"
                       >
                         <div className="grow space-y-3">
                           <div className="flex items-center gap-3">
                             <span className="material-symbols-outlined text-green-500">
                               trip_origin
                             </span>
-                            <p className="text-[#1A1A1A]">
+                            <p className="text-[#1A1A1A] font-medium">
                               {ride.pickupLocation}
                             </p>
                           </div>
@@ -253,7 +412,7 @@ function DriverDashboard() {
                             <span className="material-symbols-outlined text-red-500">
                               location_on
                             </span>
-                            <p className="text-[#1A1A1A]">
+                            <p className="text-[#1A1A1A] font-medium">
                               {ride.dropLocation}
                             </p>
                           </div>
@@ -262,8 +421,34 @@ function DriverDashboard() {
                               <span className="material-symbols-outlined text-sm">
                                 schedule
                               </span>
-                              <span>{formatTime(ride.createdAt)}</span>
+                              <span>
+                                {formatTime(ride.requestedAt || ride.createdAt)}
+                              </span>
                             </div>
+                            {ride.distance > 0 && (
+                              <div className="flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-sm">
+                                  route
+                                </span>
+                                <span>{ride.distance.toFixed(1)} km</span>
+                              </div>
+                            )}
+                            {ride.fare > 0 && (
+                              <div className="flex items-center gap-1.5 text-green-600 font-semibold">
+                                <span className="material-symbols-outlined text-sm">
+                                  payments
+                                </span>
+                                <span>${ride.fare.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {ride.userUsername && (
+                              <div className="flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-sm">
+                                  person
+                                </span>
+                                <span>{ride.userUsername}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="flex w-full gap-2 self-stretch sm:w-auto sm:flex-col">
@@ -298,7 +483,7 @@ function DriverDashboard() {
                             <span className="material-symbols-outlined text-green-500">
                               trip_origin
                             </span>
-                            <p className="text-[#1A1A1A]">
+                            <p className="text-[#1A1A1A] font-medium">
                               {ride.pickupLocation}
                             </p>
                           </div>
@@ -306,7 +491,7 @@ function DriverDashboard() {
                             <span className="material-symbols-outlined text-red-500">
                               location_on
                             </span>
-                            <p className="text-[#1A1A1A]">
+                            <p className="text-[#1A1A1A] font-medium">
                               {ride.dropLocation}
                             </p>
                           </div>
@@ -315,8 +500,34 @@ function DriverDashboard() {
                               <span className="material-symbols-outlined text-sm">
                                 schedule
                               </span>
-                              <span>{formatTime(ride.createdAt)}</span>
+                              <span>
+                                {formatTime(ride.acceptedAt || ride.createdAt)}
+                              </span>
                             </div>
+                            {ride.distance > 0 && (
+                              <div className="flex items-center gap-1.5 text-blue-700">
+                                <span className="material-symbols-outlined text-sm">
+                                  route
+                                </span>
+                                <span>{ride.distance.toFixed(1)} km</span>
+                              </div>
+                            )}
+                            {ride.fare > 0 && (
+                              <div className="flex items-center gap-1.5 text-green-600 font-semibold">
+                                <span className="material-symbols-outlined text-sm">
+                                  payments
+                                </span>
+                                <span>${ride.fare.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {ride.userUsername && (
+                              <div className="flex items-center gap-1.5 text-blue-700">
+                                <span className="material-symbols-outlined text-sm">
+                                  person
+                                </span>
+                                <span>{ride.userUsername}</span>
+                              </div>
+                            )}
                             <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white">
                               IN PROGRESS
                             </span>
@@ -353,10 +564,10 @@ function DriverDashboard() {
                   </div>
                   <div className="flex flex-col gap-2 rounded-xl border border-[#E5E5E5] bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
                     <p className="text-base font-medium leading-normal text-[#5C5C5C]">
-                      Today&apos;s Earnings
+                      Total Earnings
                     </p>
                     <p className="text-2xl font-bold leading-tight tracking-tight text-[#1A1A1A]">
-                      ${todaysEarnings.toFixed(2)}
+                      ${totalEarnings.toFixed(2)}
                     </p>
                   </div>
                   <div className="flex flex-col gap-2 rounded-xl border border-[#E5E5E5] bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
@@ -410,9 +621,21 @@ function DriverDashboard() {
                           <p className="truncate text-base font-medium leading-normal text-[#1A1A1A]">
                             {ride.pickupLocation} to {ride.dropLocation}
                           </p>
-                          <p className="text-sm text-[#5C5C5C]">
-                            {formatTime(ride.createdAt)}
-                          </p>
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                            <p className="text-sm text-[#5C5C5C]">
+                              {formatTime(ride.completedAt || ride.createdAt)}
+                            </p>
+                            {ride.distance > 0 && (
+                              <p className="text-sm text-[#5C5C5C]">
+                                {ride.distance.toFixed(1)} km
+                              </p>
+                            )}
+                            {ride.fare > 0 && (
+                              <p className="text-sm font-semibold text-green-600">
+                                +${ride.fare.toFixed(2)}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}

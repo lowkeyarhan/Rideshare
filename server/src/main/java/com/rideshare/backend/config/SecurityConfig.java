@@ -35,6 +35,7 @@ public class SecurityConfig {
             throws Exception {
 
         http.csrf(cs -> cs.disable())
+                .cors(cors -> cors.configurationSource(corsConfig()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .anyRequest().authenticated())
