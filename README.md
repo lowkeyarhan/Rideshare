@@ -13,12 +13,35 @@ A full-stack ride-hailing platform built with Spring Boot (MongoDB + JWT) backen
 
 ## Architecture Overview
 
-- **Backend**: Spring Boot 4.0.0, Java 25, Spring Data MongoDB, jjwt 0.11.5, BCrypt password hashing.
+- **Backend**: Spring Boot 4.0.0, Java 25, Spring Data MongoDB, jjwt 0.11.5, BCrypt password hashing, Swagger/OpenAPI 3.0.
 - **Frontend**: Next.js 16 App Router, React 19, TypeScript 5, Tailwind CSS, protected routes, Axios interceptors.
 - **Persistence**: MongoDB Atlas with `users` and `rides` collections plus aggregation pipelines for analytics.
 - **Security**: Stateless JWT authentication, custom filter, role-based authorization, global exception handling, CORS.
+- **API Documentation**: Interactive Swagger UI with complete API specifications and JWT authentication support.
 
-## Backend File Structure
+## Swagger Documentation
+
+Access the interactive API documentation at:
+
+- **Swagger UI**: http://localhost:8080/swagger-ui.html
+- **OpenAPI JSON**: http://localhost:8080/v3/api-docs
+
+### Using Swagger UI
+
+1. Start the backend server (`mvn spring-boot:run`)
+2. Navigate to http://localhost:8080/swagger-ui.html
+3. Click "Authorize" button (top right)
+4. Enter `Bearer <your-jwt-token>` (get token from `/api/auth/login`)
+5. Click "Authorize" to authenticate all requests
+6. Test any endpoint directly from the browser
+
+All endpoints are organized by tags:
+
+- **Authentication**: User registration and login
+- **Rides**: Complete ride management (create, accept, complete, search, filter)
+- **Analytics**: Platform analytics and reporting
+
+## Architecture Overview
 
 ```
 server/src/main/java/com/rideshare/backend/

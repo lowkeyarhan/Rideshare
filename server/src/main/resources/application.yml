@@ -4,3 +4,15 @@ spring:
 
   mongodb:
     uri: mongodb+srv://lowkeyarhan:terimaakichut80kiraftaarse@ridesharecluster0.tpeov9w.mongodb.net/rideshare?retryWrites=true&w=majority&appName=RideshareCluster0
+
+# Swagger/OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operationsSorter: method
+    tagsSorter: alpha
+    display-request-duration: true
+    doc-expansion: none

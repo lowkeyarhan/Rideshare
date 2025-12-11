@@ -5,6 +5,11 @@ import com.rideshare.backend.dto.UserRegisterRequest;
 import com.rideshare.backend.model.User;
 import com.rideshare.backend.service.UserService;
 import com.rideshare.backend.utils.JwtUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Authentication", description = "User authentication and registration endpoints")
 public class AuthController {
 
     @Autowired
@@ -28,6 +34,11 @@ public class AuthController {
     private JwtUtil jwtUtil;
 
     // Register a new user
+    @Operation(summary = "Register a new user", description = "Creates a new user account with the provided details")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User registered successfully", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content)
+    })
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody UserRegisterRequest request) {
         User user = userService.register(request);
@@ -35,6 +46,11 @@ public class AuthController {
     }
 
     // Login user and generate JWT token
+    @Operation(summary = "User login", description = "Authenticates user credentials and returns JWT token")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Login successful", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "401", description = "Invalid credentials", content = @Content)
+    })
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody UserLoginRequest request) {
         Optional<User> user = userService.validateUserCredentials(request);
